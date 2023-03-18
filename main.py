@@ -1,4 +1,5 @@
 import telebot
+import time
 from telebot import types
 import sqlite3
 
@@ -33,6 +34,9 @@ def get_text_messages(message):
         bot.send_message(message.from_user.id, "Напишите /start")
     elif message.text == "Привет":
         bot.send_message(message.from_user.id, "Здравствуйте! Напишите /help")
+    elif message.text.lower() == 'добавить тест':
+            send = bot.send_message(message.chat.id, 'Введите количество вопросов')
+            bot.register_next_step_handler(send, numbers)
     else:
         bot.send_message(message.from_user.id, "Я вас не понимаю. Напишите /help.")
 
@@ -123,5 +127,93 @@ def callback_worker(call):
         sms5 = 'Поздравляю! Вы готовы проходить тест. Он будет сгенеривован нашей системой.'
         bot.send_message(call.message.chat.id, sms5)
 
+def numbers(message):
+    global i
+    global j
+    i = 0
+    last = message.text.split()[0]
+    last = int(last)
+    while (i != last):
+        send = bot.send_message(message.chat.id, f'Введите {i + 1}-й вопрос')
+        bot.register_next_step_handler(send, questions)
+        time.sleep(15)
+        j = 0
+        while (j != 4):
+            send = bot.send_message(message.chat.id, f'Введите {j + 1}-й вариант ответа')
+            bot.register_next_step_handler(send, answers)
+            time.sleep(15)
+            j += 1
+        send = bot.send_message(message.chat.id, f'Введите номер правильного ответа')
+        bot.register_next_step_handler(send, answers)
+        time.sleep(15)
+        i += 1
+
+def add_test(question_number, question, ans_1, ans_2, ans_3, ans_4, right_ans, test_id):
+    cursor.execute(
+        'INSERT INTO testbase (question_number, question, ans_1 ,ans_2 ,ans_3,ans_4, right_ans, test_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        (question_number, question, ans_1, ans_2, ans_3, ans_4, right_ans, test_id))
+    conn.commit()
+
+
+def add_question(question_number, question, test_id):
+    cursor.execute(
+        'INSERT INTO testbase (question_number,question, test_id) VALUES (?,?, ?)',
+        (question_number, question, test_id))
+    conn.commit()
+
+
+def add_ans1(ans_1, test_id, question_number):
+    cursor.execute(
+        'UPDATE testbase SET ans_1=? WHERE test_id=? and question_number=?',
+        (ans_1, test_id, question_number))
+    conn.commit()
+
+
+def add_ans2(ans_2, test_id, question_number):
+    cursor.execute(
+        'UPDATE testbase SET ans_2=? WHERE test_id=? and question_number=?',
+        (ans_2, test_id, question_number))
+    conn.commit()
+
+
+def add_ans3(ans_3, test_id, question_number):
+    cursor.execute(
+        'UPDATE testbase SET ans_3=? WHERE test_id=? and question_number=?',
+        (ans_3, test_id, question_number))
+    conn.commit()
+
+
+def add_right_ans(right_ans, test_id, question_number):
+    cursor.execute(
+        'UPDATE testbase SET right_ans=? WHERE test_id=? and question_number=?',
+        (right_ans, test_id, question_number))
+    conn.commit()
+
+
+def add_ans4(ans_4, test_id, question_number):
+    cursor.execute(
+        'UPDATE testbase SET ans_4=? WHERE test_id=? and question_number=?',
+        (ans_4, test_id, question_number))
+    conn.commit()
+
+def questions(message):
+    last = message.text
+    user_to = message.from_user.id
+    add_question(i + 1, last, user_to)
+
+
+def answers(message):
+    ans = message.text
+    user_to = message.from_user.id
+    if j == 0:
+        add_ans1(ans, user_to, i + 1)
+    elif j == 1:
+        add_ans2(ans, user_to, i + 1)
+    elif j == 2:
+        add_ans3(ans, user_to, i + 1)
+    elif j == 3:
+        add_ans4(ans, user_to, i + 1)
+    else:
+        add_right_ans(ans, user_to, i + 1)
 
 bot.polling(none_stop=True, interval=0)
