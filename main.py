@@ -32,7 +32,7 @@ def get_text_messages(message):
         bot.send_message(message.from_user.id, "Напишите /start")
     elif message.text == "Привет":
         bot.send_message(message.from_user.id, "Здравствуйте! Напишите /help")
-    elif message.text.lower() == 'добавить тест':
+    elif message.text.lower() == 'добавить тест' or message.text.lower() == '/addtest':
         send = bot.send_message(message.chat.id, 'Введите количество вопросов')
         bot.register_next_step_handler(send, numbers)
     else:
@@ -135,9 +135,17 @@ def numbers(message):
     global i
     global j
     i = 0
-    last = message.text.split()[0]
-    last = int(last)
-    while (i != last):
+    amount = message.text.split()[0]
+    while (amount.isdigit() == False):
+        current_state.append('receiving')
+        send = bot.send_message(message.chat.id, 'Введите число, а не текст')
+        bot.register_next_step_handler(send, read_number)
+        while (current_state[-1] != 'answering'):
+            current_state_str = 'receiving'
+            if current_state[-1] == 'answering':
+                break
+        amount = current_state[-2]
+    while (i != int(amount)):
         current_state.append('receiving')
         send = bot.send_message(message.chat.id, f'Введите {i + 1}-й вопрос')
         bot.register_next_step_handler(send, questions)
@@ -166,10 +174,17 @@ def numbers(message):
     current_state.clear()
 
 
+def read_number(message):
+    amount = message.text
+    if amount.isdigit() == True:
+        current_state.append(amount)
+    current_state.append('answering')
+
+
 def questions(message):
-    last = message.text
+    amount = message.text
     user_to = message.from_user.id
-    add_question(i + 1, last, user_to)
+    add_question(i + 1, amount, user_to)
     current_state.append('answering')
 
 
