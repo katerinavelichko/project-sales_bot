@@ -1,0 +1,18 @@
+Index: .idea/dataSources.local.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<project version=\"4\">\n  <component name=\"dataSourceStorageLocal\" created-in=\"PY-223.7571.203\">\n    <data-source name=\"server.db\" uuid=\"91970a0f-318a-4d1b-a9ee-916f92a7b1a9\">\n      <database-info product=\"SQLite\" version=\"3.40.1\" jdbc-version=\"4.2\" driver-name=\"SQLite JDBC\" driver-version=\"3.40.1.0\" dbms=\"SQLITE\" exact-version=\"3.40.1\" exact-driver-version=\"3.40\">\n        <identifier-quote-string>&quot;</identifier-quote-string>\n      </database-info>\n      <case-sensitivity plain-identifiers=\"mixed\" quoted-identifiers=\"mixed\" />\n      <secret-storage>master_key</secret-storage>\n      <auth-provider>no-auth</auth-provider>\n      <schema-mapping>\n        <introspection-scope>\n          <node kind=\"schema\" qname=\"@\" />\n        </introspection-scope>\n      </schema-mapping>\n    </data-source>\n    <data-source name=\"database.db\" uuid=\"a4633866-1b2b-4df0-8ce5-8ad726621fff\">\n      <database-info product=\"SQLite\" version=\"3.40.1\" jdbc-version=\"4.2\" driver-name=\"SQLite JDBC\" driver-version=\"3.40.1.0\" dbms=\"SQLITE\" exact-version=\"3.40.1\" exact-driver-version=\"3.40\">\n        <identifier-quote-string>&quot;</identifier-quote-string>\n      </database-info>\n      <case-sensitivity plain-identifiers=\"mixed\" quoted-identifiers=\"mixed\" />\n      <secret-storage>master_key</secret-storage>\n      <auth-provider>no-auth</auth-provider>\n      <schema-mapping>\n        <introspection-scope>\n          <node kind=\"schema\" qname=\"@\" />\n        </introspection-scope>\n      </schema-mapping>\n    </data-source>\n    <data-source name=\"users.db\" uuid=\"35b85669-9436-41dd-a3cb-473ad6584b61\">\n      <database-info product=\"SQLite\" version=\"3.40.1\" jdbc-version=\"4.2\" driver-name=\"SQLite JDBC\" driver-version=\"3.40.1.0\" dbms=\"SQLITE\" exact-version=\"3.40.1\" exact-driver-version=\"3.40\">\n        <identifier-quote-string>&quot;</identifier-quote-string>\n      </database-info>\n      <case-sensitivity plain-identifiers=\"mixed\" quoted-identifiers=\"mixed\" />\n      <secret-storage>master_key</secret-storage>\n      <auth-provider>no-auth</auth-provider>\n      <schema-mapping>\n        <introspection-scope>\n          <node kind=\"schema\" qname=\"@\" />\n        </introspection-scope>\n      </schema-mapping>\n    </data-source>\n  </component>\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/dataSources.local.xml b/.idea/dataSources.local.xml
+--- a/.idea/dataSources.local.xml	
++++ b/.idea/dataSources.local.xml	
+@@ -1,6 +1,6 @@
+ <?xml version="1.0" encoding="UTF-8"?>
+ <project version="4">
+-  <component name="dataSourceStorageLocal" created-in="PY-223.7571.203">
++  <component name="dataSourceStorageLocal" created-in="PY-223.8836.43">
+     <data-source name="server.db" uuid="91970a0f-318a-4d1b-a9ee-916f92a7b1a9">
+       <database-info product="SQLite" version="3.40.1" jdbc-version="4.2" driver-name="SQLite JDBC" driver-version="3.40.1.0" dbms="SQLITE" exact-version="3.40.1" exact-driver-version="3.40">
+         <identifier-quote-string>&quot;</identifier-quote-string>
