@@ -1,26 +1,30 @@
 import telebot
-import time
 from telebot import types
 import sqlite3
 
-con = sqlite3.connect("server.db")
+
 bot = telebot.TeleBot('5844570225:AAHVbCClhE53DdtM-RpZ1vKjrPPB4j_I538')
+con = sqlite3.connect("server.db", check_same_thread=False)
+cur = con.cursor()
 conn = sqlite3.connect('users.db', check_same_thread=False)
 cursor = conn.cursor()
-
 
 def db_table_val(user_id: int, user_name: str, user_status: str, username: str):
     cursor.execute('INSERT INTO users (user_id, user_name, user_status, username) VALUES (?, ?, ?, ?)',
                    (user_id, user_name, user_status, username))
     conn.commit()
 
-
 global conclusion
 conclusion = []
+
+test_id = 2
+b2b_or_b2c = 0
 
 
 @bot.message_handler(content_types=['text'])
 def get_text_messages(message):
+    global test_id, b2b_or_b2c
+    sms2 = 'Вы можете выбрать один из 4 вариантов: '
     if message.text == "/start":
         keyboard = types.InlineKeyboardMarkup()
         key_manager = types.InlineKeyboardButton(text='Менеджер', callback_data="manager")
@@ -36,6 +40,42 @@ def get_text_messages(message):
         send = bot.send_message(message.chat.id,
                                 'Создайте пароль для доступа к вашему тесту, он может состоять только цифр')
         bot.register_next_step_handler(send, ask_key_word)
+    elif message.text == "Следующий вопрос":
+        if b2b_or_b2c == 1:
+            for value in cur.execute("SELECT * FROM entrance_test_b2b WHERE id=?", (test_id,)):
+                answers = [value[2], value[3], value[4]]
+                bot.send_poll(chat_id=message.chat.id, question=value[1], options=answers, type='quiz',
+                              correct_option_id=value[5], explanation='мы молодцы', open_period=10)
+                test_id += 1
+                if test_id == 29:
+                    keyboard = types.InlineKeyboardMarkup()
+                    key_loyal = types.InlineKeyboardButton(text='Лояльный', callback_data='loyal_client')
+                    key_new = types.InlineKeyboardButton(text='Новый', callback_data='new_client')
+                    key_negative = types.InlineKeyboardButton(text='Негативный', callback_data='negative_client')
+                    key_doubting = types.InlineKeyboardButton(text='Сомневающийся', callback_data='doubting_client')
+                    keyboard.add(key_loyal)
+                    keyboard.add(key_new)
+                    keyboard.add(key_negative)
+                    keyboard.add(key_doubting)
+                    bot.send_message(message.chat.id, sms2, reply_markup=keyboard)
+        else:
+            for value in cur.execute("SELECT * FROM entrance_test_b2c WHERE id=?", (test_id,)):
+                answers = [value[2], value[3], value[4]]
+                bot.send_poll(chat_id=message.chat.id, question=value[1], options=answers, type='quiz',
+                              correct_option_id=value[5], explanation='мы молодцы', open_period=10)
+                test_id += 1
+                if test_id == 25:
+                    keyboard = types.InlineKeyboardMarkup()
+                    key_loyal = types.InlineKeyboardButton(text='Лояльный', callback_data='loyal_client')
+                    key_new = types.InlineKeyboardButton(text='Новый', callback_data='new_client')
+                    key_negative = types.InlineKeyboardButton(text='Негативный', callback_data='negative_client')
+                    key_doubting = types.InlineKeyboardButton(text='Сомневающийся', callback_data='doubting_client')
+                    keyboard.add(key_loyal)
+                    keyboard.add(key_new)
+                    keyboard.add(key_negative)
+                    keyboard.add(key_doubting)
+                    bot.send_message(message.chat.id, sms2, reply_markup=keyboard)
+
     else:
         bot.send_message(message.from_user.id, "Я вас не понимаю. Напишите /help.")
 
@@ -70,24 +110,42 @@ def callback_worker(call):
             username = call.from_user.username
             db_table_val(user_id=us_id, user_name=us_name, user_status=status, username=username)
     if call.data == "typeofclientb" or call.data == "typeofclientc":
-        sms2 = 'Вы можете выбрать один из 4 вариантов: '
-        if call.data == "typeofclientb":
-            sms1 = 'Отлично! Вы выбрали продажи компании/магазину.Теперь нужно выбрать тип клиента'
-            conclusion.append('b2b')
-        else:
-            sms1 = 'Отлично! Вы выбрали продажи частному лицу. Теперь нужно выбрать тип клиента'
-            conclusion.append('b2c')
-        keyboard = types.InlineKeyboardMarkup()
-        key_loyal = types.InlineKeyboardButton(text='Лояльный', callback_data='loyal_client')
-        key_new = types.InlineKeyboardButton(text='Новый', callback_data='new_client')
-        key_negative = types.InlineKeyboardButton(text='Негативный', callback_data='negative_client')
-        key_doubting = types.InlineKeyboardButton(text='Сомневающийся', callback_data='doubting_client')
-        bot.send_message(call.message.chat.id, sms1)
-        keyboard.add(key_loyal)
-        keyboard.add(key_new)
-        keyboard.add(key_negative)
-        keyboard.add(key_doubting)
-        bot.send_message(call.message.chat.id, sms2, reply_markup=keyboard)
+        if call.data == "typeofclientb" or call.data == "typeofclientc":
+            if call.data == "typeofclientb":
+                b2b_or_b2c = 1
+                sms1 = 'Отлично! Вы выбрали продажи компании/магазину. Пожалуйста пройдите тест для определения уровня.'
+                conclusion.append('b2b')
+                bot.send_message(call.message.chat.id, sms1)
+                for value in cur.execute("SELECT * FROM entrance_test_b2b"):
+                    answers = [value[2], value[3], value[4]]
+                    bot.send_poll(chat_id=call.message.chat.id, question=value[1], options=answers, type='quiz',
+                                  correct_option_id=value[5], explanation='мы молодцы', open_period=10)
+                    break
+                markup = types.ReplyKeyboardMarkup()
+                button_next_question = types.KeyboardButton('Следующий вопрос')
+                markup.row(button_next_question)
+                bot.send_message(call.message.chat.id,
+                                 'Когда будете готовы перейти к следующему вопросу, нажмите кнопку "Следующий вопрос" ',
+                                 reply_markup=markup)
+            else:
+                sms1 = 'Отлично! Вы выбрали продажи частному лицу. Пожалуйста пройдите тест для определения уровня.'
+                conclusion.append('b2c')
+                bot.send_message(call.message.chat.id, sms1)
+                for value in cur.execute("SELECT * FROM entrance_test_b2c"):
+                    q = value[1]
+                    ans_1 = value[2]
+                    ans_2 = value[3]
+                    ans_3 = value[4]
+                    answers = [ans_1, ans_2, ans_3]
+                    bot.send_poll(chat_id=call.message.chat.id, question=q, options=answers, type='quiz',
+                                  correct_option_id=value[5], explanation='мы молодцы', open_period=10)
+                    break
+                markup = types.ReplyKeyboardMarkup()
+                button_next_question = types.KeyboardButton('Следующий вопрос')
+                markup.row(button_next_question)
+                bot.send_message(call.message.chat.id,
+                                 'Когда будете готовы перейти к следующему вопросу, нажмите кнопку "Следующий вопрос" ',
+                                 reply_markup=markup)
     elif call.data == 'loyal_client' or call.data == 'new_client' or call.data == 'negative_client' or call.data == 'doubting_client':
         if call.data == 'loyal_client':
             conclusion.append('loyal')
