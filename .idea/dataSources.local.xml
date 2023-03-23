@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="dataSourceStorageLocal" created-in="PY-223.8617.48">
+  <component name="dataSourceStorageLocal" created-in="PY-223.7571.203">
     <data-source name="server.db" uuid="91970a0f-318a-4d1b-a9ee-916f92a7b1a9">
       <database-info product="SQLite" version="3.40.1" jdbc-version="4.2" driver-name="SQLite JDBC" driver-version="3.40.1.0" dbms="SQLITE" exact-version="3.40.1" exact-driver-version="3.40">
         <identifier-quote-string>&quot;</identifier-quote-string>
@@ -10,10 +10,7 @@
       <auth-provider>no-auth</auth-provider>
       <schema-mapping>
         <introspection-scope>
-          <node kind="schema">
-            <name qname="@" />
-            <name qname="main" />
-          </node>
+          <node kind="schema" qname="@" />
         </introspection-scope>
       </schema-mapping>
     </data-source>
@@ -45,7 +42,6 @@
     </data-source>
     <data-source name="@server.redshift.amazonaws.com" uuid="070f08ef-78f7-4862-bc67-7c680c823aa2">
       <database-info product="" version="" jdbc-version="" driver-name="" driver-version="" dbms="REDSHIFT" exact-version="0" />
-      <secret-storage>master_key</secret-storage>
       <schema-mapping />
     </data-source>
   </component>
