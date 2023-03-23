@@ -33,8 +33,9 @@ def get_text_messages(message):
     elif message.text == "Привет":
         bot.send_message(message.from_user.id, "Здравствуйте! Напишите /help")
     elif message.text.lower() == 'добавить тест' or message.text.lower() == '/addtest':
-        send = bot.send_message(message.chat.id, 'Введите количество вопросов')
-        bot.register_next_step_handler(send, numbers)
+        send = bot.send_message(message.chat.id,
+                                'Создайте пароль для доступа к вашему тесту, он может состоять только цифр')
+        bot.register_next_step_handler(send, ask_key_word)
     else:
         bot.send_message(message.from_user.id, "Я вас не понимаю. Напишите /help.")
 
@@ -128,6 +129,40 @@ def callback_worker(call):
 
 global current_state
 current_state = []
+key_word = {}
+
+
+@bot.message_handler()
+def ask_key_word(message):
+    msg = message.text
+    msg = "'" + msg + "'"
+    info_msg = cursor.execute("SELECT * FROM testbase WHERE test_id =" + str(msg)).fetchall()
+    user_to = message.from_user.id
+    key_word[user_to] = []
+    key_word[user_to].append(msg)
+    key_word[user_to].append(info_msg)
+    while len(info_msg) > 0:
+        current_state.append('receiving')
+        send = bot.send_message(message.chat.id, 'Такой  пароль для доступа уже существует, придумайте новый')
+        bot.register_next_step_handler(send, make_key_word)
+        while (current_state[-1] != 'answering'):
+            current_state_str = 'receiving'
+            if current_state[-1] == 'answering':
+                break
+        info_msg = key_word[user_to][1]
+    send = bot.send_message(message.chat.id, 'Ваш пароль успешно добавлен. Введите количество вопросов')
+    bot.register_next_step_handler(send, numbers)
+
+
+def make_key_word(message):
+    msg = message.text
+    user_to = message.from_user.id
+    msg = "'" + msg + "'"
+    info_msg = cursor.execute("SELECT * FROM testbase WHERE test_id = " + str(msg)).fetchall()
+    if len(info_msg) == 0:
+        key_word[user_to][0] = msg
+    key_word[user_to].append(info_msg)
+    current_state.append('answering')
 
 
 @bot.message_handler()
@@ -182,9 +217,20 @@ def read_number(message):
 
 
 def questions(message):
-    amount = message.text
+    last = message.text
     user_to = message.from_user.id
-    add_question(i + 1, amount, user_to)
+    user_to = key_word[user_to][0]
+    user_to = int(user_to[1:-1])
+    add_question(i + 1, last, user_to)
+    current_state.append('answering')
+
+
+def answers(message):
+    ans = message.text
+    user_to = message.from_user.id
+    user_to = key_word[user_to][0]
+    user_to = int(user_to[1:-1])
+    add_ans(ans, user_to, i + 1, j + 1)
     current_state.append('answering')
 
 
@@ -213,13 +259,6 @@ def add_ans(ans, test_id, question_number, j_t):
         string,
         (ans, test_id, question_number))
     conn.commit()
-
-
-def answers(message):
-    ans = message.text
-    user_to = message.from_user.id
-    add_ans(ans, user_to, i + 1, j + 1)
-    current_state.append('answering')
 
 
 bot.polling(none_stop=True, interval=0)
