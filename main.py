@@ -45,7 +45,7 @@ def get_text_messages(message):
             for value in cur.execute("SELECT * FROM entrance_test_b2b WHERE id=?", (test_id,)):
                 answers = [value[2], value[3], value[4]]
                 bot.send_poll(chat_id=message.chat.id, question=value[1], options=answers, type='quiz',
-                              correct_option_id=value[5], explanation='мы молодцы', open_period=10)
+                              correct_option_id=value[5], explanation='мы молодцы', open_period=30)
                 test_id += 1
                 if test_id == 29:
                     keyboard = types.InlineKeyboardMarkup()
@@ -62,7 +62,7 @@ def get_text_messages(message):
             for value in cur.execute("SELECT * FROM entrance_test_b2c WHERE id=?", (test_id,)):
                 answers = [value[2], value[3], value[4]]
                 bot.send_poll(chat_id=message.chat.id, question=value[1], options=answers, type='quiz',
-                              correct_option_id=value[5], explanation='мы молодцы', open_period=10)
+                              correct_option_id=value[5], explanation='мы молодцы', open_period=30)
                 test_id += 1
                 if test_id == 25:
                     keyboard = types.InlineKeyboardMarkup()
@@ -82,6 +82,7 @@ def get_text_messages(message):
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_worker(call):
+    global b2b_or_b2c
     if call.data == "manager" or "boss":
         if call.data == "manager":
             bot.send_message(call.from_user.id, "Вам предстоит выбрать тип продаж. ")
@@ -119,7 +120,7 @@ def callback_worker(call):
                 for value in cur.execute("SELECT * FROM entrance_test_b2b"):
                     answers = [value[2], value[3], value[4]]
                     bot.send_poll(chat_id=call.message.chat.id, question=value[1], options=answers, type='quiz',
-                                  correct_option_id=value[5], explanation='мы молодцы', open_period=10)
+                                  correct_option_id=value[5], explanation='мы молодцы', open_period=30)
                     break
                 markup = types.ReplyKeyboardMarkup()
                 button_next_question = types.KeyboardButton('Следующий вопрос')
@@ -138,7 +139,7 @@ def callback_worker(call):
                     ans_3 = value[4]
                     answers = [ans_1, ans_2, ans_3]
                     bot.send_poll(chat_id=call.message.chat.id, question=q, options=answers, type='quiz',
-                                  correct_option_id=value[5], explanation='мы молодцы', open_period=10)
+                                  correct_option_id=value[5], explanation='мы молодцы', open_period=30)
                     break
                 markup = types.ReplyKeyboardMarkup()
                 button_next_question = types.KeyboardButton('Следующий вопрос')
