@@ -5,10 +5,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="2f028b91-fee2-488b-b4f2-1dbcbc437b28" name="Changes" comment="add file">
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources/91970a0f-318a-4d1b-a9ee-916f92a7b1a9.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources/91970a0f-318a-4d1b-a9ee-916f92a7b1a9.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.local.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/project-sales_bot.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/project-sales_bot.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/users.db" beforeDir="false" afterPath="$PROJECT_DIR$/users.db" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -52,7 +52,6 @@
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
       <option name="SDK_HOME" value="/usr/bin/python3" />
-      <option name="SDK_NAME" value="Python 3.9" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
       <option name="IS_MODULE_SDK" value="false" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
@@ -80,9 +79,14 @@
       <workItem from="1679313912623" duration="204000" />
       <workItem from="1679316688088" duration="942000" />
       <workItem from="1679581464301" duration="56000" />
-      <workItem from="1679581617170" duration="2741000" />
-      <workItem from="1679593367969" duration="61000" />
-      <workItem from="1679593436841" duration="1734000" />
+      <workItem from="1679581617170" duration="831000" />
+      <workItem from="1679652974196" duration="432000" />
+      <workItem from="1679653463756" duration="43000" />
+      <workItem from="1679654569738" duration="46000" />
+      <workItem from="1679654735686" duration="47000" />
+      <workItem from="1679655753330" duration="347000" />
+      <workItem from="1679656401714" duration="62000" />
+      <workItem from="1679683200572" duration="1293000" />
     </task>
     <task id="LOCAL-00001" summary="add file">
       <created>1679316945896</created>
@@ -91,14 +95,7 @@
       <option name="project" value="LOCAL" />
       <updated>1679316945896</updated>
     </task>
-    <task id="LOCAL-00002" summary="add file">
-      <created>1679582474313</created>
-      <option name="number" value="00002" />
-      <option name="presentableId" value="LOCAL-00002" />
-      <option name="project" value="LOCAL" />
-      <updated>1679582474313</updated>
-    </task>
-    <option name="localTasksCounter" value="3" />
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -120,7 +117,7 @@
     <option name="LAST_COMMIT_MESSAGE" value="add file" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/project_sales_bot$main.coverage" NAME="main Coverage Results" MODIFIED="1679594530123" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/sss$main.coverage" NAME="main Coverage Results" MODIFIED="1679495123309" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/project_sales_bot$main.coverage" NAME="main Coverage Results" MODIFIED="1679582268268" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/sss$main.coverage" NAME="main Coverage Results" MODIFIED="1679683210411" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>
