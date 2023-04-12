@@ -8,7 +8,7 @@ con = sqlite3.connect("server.db", check_same_thread=False)
 cur = con.cursor()
 conn = sqlite3.connect('users.db', check_same_thread=False)
 cursor = conn.cursor()
-
+teststr=''
 
 def set_main_menu():
     main_menu_commands = [
@@ -20,6 +20,13 @@ def set_main_menu():
                    description='Добавить тест')]
 
     bot.set_my_commands(main_menu_commands)
+
+
+bot = telebot.TeleBot('5844570225:AAHVbCClhE53DdtM-RpZ1vKjrPPB4j_I538')
+con = sqlite3.connect("server.db", check_same_thread=False)
+cur = con.cursor()
+conn = sqlite3.connect('users.db', check_same_thread=False)
+cursor = conn.cursor()
 
 
 def db_table_val(user_id: int, user_name: str, user_status: str, username: str):
@@ -62,8 +69,6 @@ def get_text_messages(message):
                               correct_option_id=value[5], explanation='мы молодцы', open_period=30)
                 test_id += 1
                 if test_id == 29:
-                    bot.send_message(message.from_user.id, 'Входной тест завершён.',
-                                     reply_markup=types.ReplyKeyboardRemove())
                     keyboard = types.InlineKeyboardMarkup()
                     key_loyal = types.InlineKeyboardButton(text='Лояльный', callback_data='loyal_client')
                     key_new = types.InlineKeyboardButton(text='Новый', callback_data='new_client')
@@ -81,8 +86,6 @@ def get_text_messages(message):
                               correct_option_id=value[5], explanation='мы молодцы', open_period=30)
                 test_id += 1
                 if test_id == 25:
-                    bot.send_message(message.from_user.id, 'Входной тест завершён.',
-                                     reply_markup=types.ReplyKeyboardRemove())
                     keyboard = types.InlineKeyboardMarkup()
                     key_loyal = types.InlineKeyboardButton(text='Лояльный', callback_data='loyal_client')
                     key_new = types.InlineKeyboardButton(text='Новый', callback_data='new_client')
@@ -140,7 +143,7 @@ def callback_worker(call):
                     bot.send_poll(chat_id=call.message.chat.id, question=value[1], options=answers, type='quiz',
                                   correct_option_id=value[5], explanation='мы молодцы', open_period=30)
                     break
-                markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+                markup = types.ReplyKeyboardMarkup()
                 button_next_question = types.KeyboardButton('Следующий вопрос')
                 markup.row(button_next_question)
                 bot.send_message(call.message.chat.id,
@@ -159,7 +162,7 @@ def callback_worker(call):
                     bot.send_poll(chat_id=call.message.chat.id, question=q, options=answers, type='quiz',
                                   correct_option_id=value[5], explanation='мы молодцы', open_period=30)
                     break
-                markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+                markup = types.ReplyKeyboardMarkup()
                 button_next_question = types.KeyboardButton('Следующий вопрос')
                 markup.row(button_next_question)
                 bot.send_message(call.message.chat.id,
@@ -338,6 +341,4 @@ def add_ans(ans, test_id, question_number, j_t):
     conn.commit()
 
 
-if __name__ == '__main__':
-    set_main_menu()
-    bot.polling(none_stop=True, interval=0)
+bot.polling(none_stop=True, interval=0)
