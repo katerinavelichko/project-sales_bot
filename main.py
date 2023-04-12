@@ -59,7 +59,7 @@ def get_text_messages(message):
             for value in cur.execute("SELECT * FROM entrance_test_b2b WHERE id=?", (test_id,)):
                 answers = [value[2], value[3], value[4]]
                 bot.send_poll(chat_id=message.chat.id, question=value[1], options=answers, type='quiz',
-                              correct_option_id=value[5], explanation='мы молодцы', open_period=30)
+                              correct_option_id=value[5], explanation='ты умничка!', open_period=30)
                 test_id += 1
                 if test_id == 29:
                     bot.send_message(message.from_user.id, 'Входной тест завершён.',
