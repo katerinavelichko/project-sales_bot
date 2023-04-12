@@ -1,18 +1,32 @@
 import telebot
 from telebot import types
+from telebot.types import BotCommand
 import sqlite3
 
-
-bot = telebot.TeleBot('5844570225:AAHVbCClhE53DdtM-RpZ1vKjrPPB4j_I538')
+bot = telebot.TeleBot('5844570225:AAHVbCClhE53DdtM-RpZ1vKjrPPB4j_I538', 'markdown')
 con = sqlite3.connect("server.db", check_same_thread=False)
 cur = con.cursor()
 conn = sqlite3.connect('users.db', check_same_thread=False)
 cursor = conn.cursor()
 
+
+def set_main_menu():
+    main_menu_commands = [
+        BotCommand(command='/start',
+                   description='Запуск бота'),
+        BotCommand(command='/help',
+                   description='Помощь'),
+        BotCommand(command='/addtest',
+                   description='Добавить тест')]
+
+    bot.set_my_commands(main_menu_commands)
+
+
 def db_table_val(user_id: int, user_name: str, user_status: str, username: str):
     cursor.execute('INSERT INTO users (user_id, user_name, user_status, username) VALUES (?, ?, ?, ?)',
                    (user_id, user_name, user_status, username))
     conn.commit()
+
 
 global conclusion
 conclusion = []
@@ -45,9 +59,11 @@ def get_text_messages(message):
             for value in cur.execute("SELECT * FROM entrance_test_b2b WHERE id=?", (test_id,)):
                 answers = [value[2], value[3], value[4]]
                 bot.send_poll(chat_id=message.chat.id, question=value[1], options=answers, type='quiz',
-                              correct_option_id=value[5], explanation='мы молодцы', open_period=30)
+                              correct_option_id=value[5], explanation='ты умничка!', open_period=30)
                 test_id += 1
                 if test_id == 29:
+                    bot.send_message(message.from_user.id, 'Входной тест завершён.',
+                                     reply_markup=types.ReplyKeyboardRemove())
                     keyboard = types.InlineKeyboardMarkup()
                     key_loyal = types.InlineKeyboardButton(text='Лояльный', callback_data='loyal_client')
                     key_new = types.InlineKeyboardButton(text='Новый', callback_data='new_client')
@@ -65,6 +81,8 @@ def get_text_messages(message):
                               correct_option_id=value[5], explanation='мы молодцы', open_period=30)
                 test_id += 1
                 if test_id == 25:
+                    bot.send_message(message.from_user.id, 'Входной тест завершён.',
+                                     reply_markup=types.ReplyKeyboardRemove())
                     keyboard = types.InlineKeyboardMarkup()
                     key_loyal = types.InlineKeyboardButton(text='Лояльный', callback_data='loyal_client')
                     key_new = types.InlineKeyboardButton(text='Новый', callback_data='new_client')
@@ -122,7 +140,7 @@ def callback_worker(call):
                     bot.send_poll(chat_id=call.message.chat.id, question=value[1], options=answers, type='quiz',
                                   correct_option_id=value[5], explanation='мы молодцы', open_period=30)
                     break
-                markup = types.ReplyKeyboardMarkup()
+                markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
                 button_next_question = types.KeyboardButton('Следующий вопрос')
                 markup.row(button_next_question)
                 bot.send_message(call.message.chat.id,
@@ -141,7 +159,7 @@ def callback_worker(call):
                     bot.send_poll(chat_id=call.message.chat.id, question=q, options=answers, type='quiz',
                                   correct_option_id=value[5], explanation='мы молодцы', open_period=30)
                     break
-                markup = types.ReplyKeyboardMarkup()
+                markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
                 button_next_question = types.KeyboardButton('Следующий вопрос')
                 markup.row(button_next_question)
                 bot.send_message(call.message.chat.id,
@@ -320,4 +338,6 @@ def add_ans(ans, test_id, question_number, j_t):
     conn.commit()
 
 
-bot.polling(none_stop=True, interval=0)
+if __name__ == '__main__':
+    set_main_menu()
+    bot.polling(none_stop=True, interval=0)
