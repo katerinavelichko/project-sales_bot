@@ -8,7 +8,7 @@ con = sqlite3.connect("server.db", check_same_thread=False)
 cur = con.cursor()
 conn = sqlite3.connect('users.db', check_same_thread=False)
 cursor = conn.cursor()
-teststr=''
+
 
 def set_main_menu():
     main_menu_commands = [
