@@ -32,11 +32,13 @@ test_id = 2
 b2b_or_b2c = 0
 test = 0
 question_number = 1
+correct_option = -1
+result = 0
 
 
 @bot.message_handler(content_types=['text'])
 def get_text_messages(message):
-    global test_id, b2b_or_b2c, question_number
+    global test_id, b2b_or_b2c, test_id, question_number, correct_option
     sms2 = 'Вы можете выбрать один из 4 вариантов: '
     if message.text == "/start":
         keyboard = types.InlineKeyboardMarkup()
@@ -57,11 +59,11 @@ def get_text_messages(message):
         if b2b_or_b2c == 1:
             for value in cur.execute("SELECT * FROM entrance_test_b2b WHERE id=?", (test_id,)):
                 answers = [value[2], value[3], value[4]]
+                correct_option = value[5]
                 bot.send_poll(chat_id=message.chat.id, question=value[1], options=answers, type='quiz',
-                              correct_option_id=value[5], open_period=30)
+                              correct_option_id=value[5], open_period=30, is_anonymous=False)
                 test_id += 1
                 if test_id == 29:
-                    b2b_or_b2c = 2
                     bot.send_message(message.from_user.id, 'Входной тест завершён.',
                                      reply_markup=types.ReplyKeyboardRemove())
                     keyboard = types.InlineKeyboardMarkup()
@@ -77,11 +79,11 @@ def get_text_messages(message):
         elif b2b_or_b2c == 0:
             for value in cur.execute("SELECT * FROM entrance_test_b2c WHERE id=?", (test_id,)):
                 answers = [value[2], value[3], value[4]]
+                correct_option = value[5]
                 bot.send_poll(chat_id=message.chat.id, question=value[1], options=answers, type='quiz',
-                              correct_option_id=value[5], open_period=30)
+                              correct_option_id=value[5], open_period=30, is_anonymous=False)
                 test_id += 1
                 if test_id == 25:
-                    b2b_or_b2c = 2
                     bot.send_message(message.from_user.id, 'Входной тест завершён.',
                                      reply_markup=types.ReplyKeyboardRemove())
                     keyboard = types.InlineKeyboardMarkup()
@@ -98,8 +100,9 @@ def get_text_messages(message):
             for value in cur.execute("SELECT * FROM main_tests WHERE test_password=? AND question_number=?",
                                      (test, question_number,)):
                 answers = [value[3], value[4], value[5]]
+                correct_option = value[6]
                 bot.send_poll(chat_id=message.chat.id, question=value[2], options=answers, type='quiz',
-                              correct_option_id=value[6], open_period=30)
+                              correct_option_id=value[6], open_period=30, is_anonymous=False)
                 question_number += 1
             if question_number == 6:
                 bot.send_message(message.from_user.id, 'Тест завершён.',
@@ -109,9 +112,29 @@ def get_text_messages(message):
         bot.send_message(message.from_user.id, "Я вас не понимаю. Напишите /help.")
 
 
+@bot.poll_answer_handler()
+def handle_poll_answer(poll_answer):
+    global result, correct_option, test_id, b2b_or_b2c
+    selected_option = poll_answer.option_ids[0]
+    if correct_option == selected_option:
+        result += 1
+    if test_id == 25 and b2b_or_b2c == 0:
+        b2b_or_b2c = 2
+        bot.send_message(poll_answer.user.id, f'Вы набрали {result} баллов из 25')
+        result = 0
+    elif test_id == 29 and b2b_or_b2c == 1:
+        b2b_or_b2c = 2
+        bot.send_message(poll_answer.user.id, f'Вы набрали {result} баллов из 29')
+        result = 0
+    elif question_number == 6 and b2b_or_b2c == 2:
+        b2b_or_b2c = 2
+        bot.send_message(poll_answer.user.id, f'Вы набрали {result} баллов из 5')
+        result = 0
+
+
 @bot.callback_query_handler(func=lambda call: True)
 def callback_worker(call):
-    global b2b_or_b2c, test, question_number
+    global b2b_or_b2c, test, question_number, correct_option, test_id
     if call.data == "manager" or "boss":
         if call.data == "manager":
             bot.send_message(call.from_user.id, "Вам предстоит выбрать тип продаж. ")
@@ -148,8 +171,10 @@ def callback_worker(call):
                 bot.send_message(call.message.chat.id, sms1)
                 for value in cur.execute("SELECT * FROM entrance_test_b2b"):
                     answers = [value[2], value[3], value[4]]
+                    correct_option = value[5]
                     bot.send_poll(chat_id=call.message.chat.id, question=value[1], options=answers, type='quiz',
-                                  correct_option_id=value[5], open_period=30)
+                                  correct_option_id=value[5], open_period=30, is_anonymous=False)
+                    test_id += 1
                     break
                 markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
                 button_next_question = types.KeyboardButton('Следующий вопрос')
@@ -163,14 +188,17 @@ def callback_worker(call):
                 bot.send_message(call.message.chat.id, sms1)
                 for value in cur.execute("SELECT * FROM entrance_test_b2c"):
                     answers = [value[2], value[3], value[4]]
+                    correct_option = value[5]
                     bot.send_poll(chat_id=call.message.chat.id, question=value[1], options=answers, type='quiz',
-                                  correct_option_id=value[5], open_period=30)
+                                  correct_option_id=value[5], open_period=30, is_anonymous=False)
+                    test_id += 1
                     break
                 markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
                 button_next_question = types.KeyboardButton('Следующий вопрос')
                 markup.row(button_next_question)
                 bot.send_message(call.message.chat.id,
-                                 'Когда будете готовы перейти к следующему вопросу, нажмите кнопку "Следующий вопрос" ',reply_markup=markup)
+                                 'Когда будете готовы перейти к следующему вопросу, нажмите кнопку "Следующий вопрос" ',
+                                 reply_markup=markup)
     elif call.data == 'loyal_client' or call.data == 'new_client' or call.data == 'negative_client' or call.data == 'doubting_client':
         if call.data == 'loyal_client':
             test += 100
@@ -218,8 +246,9 @@ def callback_worker(call):
         for value in cur.execute("SELECT * FROM main_tests WHERE test_password=? AND question_number=?",
                                  (test, question_number,)):
             answers = [value[3], value[4], value[5]]
+            correct_option = value[6]
             bot.send_poll(chat_id=call.message.chat.id, question=value[2], options=answers, type='quiz',
-                          correct_option_id=value[6], open_period=30)
+                          correct_option_id=value[6], open_period=30, is_anonymous=False)
             question_number += 1
             break
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
