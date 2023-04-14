@@ -28,16 +28,15 @@ def db_table_val(user_id: int, user_name: str, user_status: str, username: str):
     conn.commit()
 
 
-global conclusion
-conclusion = []
-
 test_id = 2
 b2b_or_b2c = 0
+test = 0
+question_number = 1
 
 
 @bot.message_handler(content_types=['text'])
 def get_text_messages(message):
-    global test_id, b2b_or_b2c
+    global test_id, b2b_or_b2c, question_number
     sms2 = 'Вы можете выбрать один из 4 вариантов: '
     if message.text == "/start":
         keyboard = types.InlineKeyboardMarkup()
@@ -59,9 +58,30 @@ def get_text_messages(message):
             for value in cur.execute("SELECT * FROM entrance_test_b2b WHERE id=?", (test_id,)):
                 answers = [value[2], value[3], value[4]]
                 bot.send_poll(chat_id=message.chat.id, question=value[1], options=answers, type='quiz',
-                              correct_option_id=value[5], explanation='ты умничка!', open_period=30)
+                              correct_option_id=value[5], open_period=30)
                 test_id += 1
                 if test_id == 29:
+                    b2b_or_b2c = 2
+                    bot.send_message(message.from_user.id, 'Входной тест завершён.',
+                                     reply_markup=types.ReplyKeyboardRemove())
+                    keyboard = types.InlineKeyboardMarkup()
+                    key_loyal = types.InlineKeyboardButton(text='Лояльный', callback_data='loyal_client')
+                    key_new = types.InlineKeyboardButton(text='Новый', callback_data='new_client')
+                    key_negative = types.InlineKeyboardButton(text='Негативный', callback_data='negative_client')
+                    key_doubting = types.InlineKeyboardButton(text='Сомневающийся', callback_data='doubting_client')
+                    keyboard.add(key_loyal)
+                    keyboard.add(key_new)
+                    keyboard.add(key_negative)
+                    keyboard.add(key_doubting)
+                    bot.send_message(message.chat.id, sms2, reply_markup=keyboard)
+        elif b2b_or_b2c == 0:
+            for value in cur.execute("SELECT * FROM entrance_test_b2c WHERE id=?", (test_id,)):
+                answers = [value[2], value[3], value[4]]
+                bot.send_poll(chat_id=message.chat.id, question=value[1], options=answers, type='quiz',
+                              correct_option_id=value[5], open_period=30)
+                test_id += 1
+                if test_id == 25:
+                    b2b_or_b2c = 2
                     bot.send_message(message.from_user.id, 'Входной тест завершён.',
                                      reply_markup=types.ReplyKeyboardRemove())
                     keyboard = types.InlineKeyboardMarkup()
@@ -75,24 +95,15 @@ def get_text_messages(message):
                     keyboard.add(key_doubting)
                     bot.send_message(message.chat.id, sms2, reply_markup=keyboard)
         else:
-            for value in cur.execute("SELECT * FROM entrance_test_b2c WHERE id=?", (test_id,)):
-                answers = [value[2], value[3], value[4]]
-                bot.send_poll(chat_id=message.chat.id, question=value[1], options=answers, type='quiz',
-                              correct_option_id=value[5], explanation='мы молодцы', open_period=30)
-                test_id += 1
-                if test_id == 25:
-                    bot.send_message(message.from_user.id, 'Входной тест завершён.',
-                                     reply_markup=types.ReplyKeyboardRemove())
-                    keyboard = types.InlineKeyboardMarkup()
-                    key_loyal = types.InlineKeyboardButton(text='Лояльный', callback_data='loyal_client')
-                    key_new = types.InlineKeyboardButton(text='Новый', callback_data='new_client')
-                    key_negative = types.InlineKeyboardButton(text='Негативный', callback_data='negative_client')
-                    key_doubting = types.InlineKeyboardButton(text='Сомневающийся', callback_data='doubting_client')
-                    keyboard.add(key_loyal)
-                    keyboard.add(key_new)
-                    keyboard.add(key_negative)
-                    keyboard.add(key_doubting)
-                    bot.send_message(message.chat.id, sms2, reply_markup=keyboard)
+            for value in cur.execute("SELECT * FROM main_tests WHERE test_password=? AND question_number=?",
+                                     (test, question_number,)):
+                answers = [value[3], value[4], value[5]]
+                bot.send_poll(chat_id=message.chat.id, question=value[2], options=answers, type='quiz',
+                              correct_option_id=value[6], open_period=30)
+                question_number += 1
+            if question_number == 6:
+                bot.send_message(message.from_user.id, 'Тест завершён.',
+                                 reply_markup=types.ReplyKeyboardRemove())
 
     else:
         bot.send_message(message.from_user.id, "Я вас не понимаю. Напишите /help.")
@@ -100,7 +111,7 @@ def get_text_messages(message):
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_worker(call):
-    global b2b_or_b2c
+    global b2b_or_b2c, test, question_number
     if call.data == "manager" or "boss":
         if call.data == "manager":
             bot.send_message(call.from_user.id, "Вам предстоит выбрать тип продаж. ")
@@ -131,14 +142,14 @@ def callback_worker(call):
     if call.data == "typeofclientb" or call.data == "typeofclientc":
         if call.data == "typeofclientb" or call.data == "typeofclientc":
             if call.data == "typeofclientb":
+                test += 1000
                 b2b_or_b2c = 1
                 sms1 = 'Отлично! Вы выбрали продажи компании/магазину. Пожалуйста пройдите тест для определения уровня.'
-                conclusion.append('b2b')
                 bot.send_message(call.message.chat.id, sms1)
                 for value in cur.execute("SELECT * FROM entrance_test_b2b"):
                     answers = [value[2], value[3], value[4]]
                     bot.send_poll(chat_id=call.message.chat.id, question=value[1], options=answers, type='quiz',
-                                  correct_option_id=value[5], explanation='мы молодцы', open_period=30)
+                                  correct_option_id=value[5], open_period=30)
                     break
                 markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
                 button_next_question = types.KeyboardButton('Следующий вопрос')
@@ -147,33 +158,28 @@ def callback_worker(call):
                                  'Когда будете готовы перейти к следующему вопросу, нажмите кнопку "Следующий вопрос" ',
                                  reply_markup=markup)
             else:
+                test += 2000
                 sms1 = 'Отлично! Вы выбрали продажи частному лицу. Пожалуйста пройдите тест для определения уровня.'
-                conclusion.append('b2c')
                 bot.send_message(call.message.chat.id, sms1)
                 for value in cur.execute("SELECT * FROM entrance_test_b2c"):
-                    q = value[1]
-                    ans_1 = value[2]
-                    ans_2 = value[3]
-                    ans_3 = value[4]
-                    answers = [ans_1, ans_2, ans_3]
-                    bot.send_poll(chat_id=call.message.chat.id, question=q, options=answers, type='quiz',
-                                  correct_option_id=value[5], explanation='мы молодцы', open_period=30)
+                    answers = [value[2], value[3], value[4]]
+                    bot.send_poll(chat_id=call.message.chat.id, question=value[1], options=answers, type='quiz',
+                                  correct_option_id=value[5], open_period=30)
                     break
                 markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
                 button_next_question = types.KeyboardButton('Следующий вопрос')
                 markup.row(button_next_question)
                 bot.send_message(call.message.chat.id,
-                                 'Когда будете готовы перейти к следующему вопросу, нажмите кнопку "Следующий вопрос" ',
-                                 reply_markup=markup)
+                                 'Когда будете готовы перейти к следующему вопросу, нажмите кнопку "Следующий вопрос" ',reply_markup=markup)
     elif call.data == 'loyal_client' or call.data == 'new_client' or call.data == 'negative_client' or call.data == 'doubting_client':
         if call.data == 'loyal_client':
-            conclusion.append('loyal')
+            test += 100
         elif call.data == 'new_client':
-            conclusion.append('new')
+            test += 200
         elif call.data == 'negative_client':
-            conclusion.append('negative')
+            test += 300
         elif call.data == 'doubting_client':
-            conclusion.append('doubting')
+            test += 400
         sms3 = 'Давайте выберем форму коммуникации'
         keyboard = types.InlineKeyboardMarkup()
         key_phone = types.InlineKeyboardButton(text='Телефон', callback_data='phone_communication')
@@ -185,11 +191,11 @@ def callback_worker(call):
         bot.send_message(call.message.chat.id, sms3, reply_markup=keyboard)
     elif call.data == 'phone_communication' or call.data == 'meet_communication' or call.data == 'message_communication':
         if call.data == 'phone_communication':
-            conclusion.append('phone')
+            test += 10
         elif call.data == 'meet_communication':
-            conclusion.append('meet')
+            test += 20
         elif call.data == 'message_communication':
-            conclusion.append('message')
+            test += 30
         sms4 = 'Осталось выбрать уровень'
         keyboard = types.InlineKeyboardMarkup()
         key_level1 = types.InlineKeyboardButton(text='Новичок', callback_data='level1')
@@ -201,7 +207,27 @@ def callback_worker(call):
         bot.send_message(call.message.chat.id, sms4, reply_markup=keyboard)
     elif call.data == 'level1' or call.data == 'level2' or call.data == 'level3':
         sms5 = 'Поздравляю! Вы готовы проходить тест. Он будет сгенеривован нашей системой.'
+        if call.data == 'level1':
+            test += 1
+        elif call.data == 'level2':
+            test += 2
+        elif call.data == 'level3':
+            test += 3
         bot.send_message(call.message.chat.id, sms5)
+    if test in [2211, 2221, 2231, 2111, 2121, 2123]:
+        for value in cur.execute("SELECT * FROM main_tests WHERE test_password=? AND question_number=?",
+                                 (test, question_number,)):
+            answers = [value[3], value[4], value[5]]
+            bot.send_poll(chat_id=call.message.chat.id, question=value[2], options=answers, type='quiz',
+                          correct_option_id=value[6], open_period=30)
+            question_number += 1
+            break
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        button_next_question = types.KeyboardButton('Следующий вопрос')
+        markup.row(button_next_question)
+        bot.send_message(call.message.chat.id,
+                         'Когда будете готовы перейти к следующему вопросу, нажмите кнопку "Следующий вопрос" ',
+                         reply_markup=markup)
 
 
 global current_state
