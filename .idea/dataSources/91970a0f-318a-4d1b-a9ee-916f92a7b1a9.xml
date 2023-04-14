@@ -1425,74 +1425,107 @@
     </argument>
     <table id="504" parent="173" name="entrance_test_b2b"/>
     <table id="505" parent="173" name="entrance_test_b2c"/>
-    <table id="506" parent="173" name="sqlite_master">
+    <table id="506" parent="173" name="main_tests"/>
+    <table id="507" parent="173" name="sqlite_master">
       <System>1</System>
     </table>
-    <column id="507" parent="504" name="id">
+    <column id="508" parent="504" name="id">
       <DasType>int|0s</DasType>
       <Position>1</Position>
     </column>
-    <column id="508" parent="504" name="question">
+    <column id="509" parent="504" name="question">
       <DasType>TEXT|0s</DasType>
       <Position>2</Position>
     </column>
-    <column id="509" parent="504" name="ans_1">
+    <column id="510" parent="504" name="ans_1">
       <DasType>TEXT|0s</DasType>
       <Position>3</Position>
     </column>
-    <column id="510" parent="504" name="ans_2">
+    <column id="511" parent="504" name="ans_2">
       <DasType>TEXT|0s</DasType>
       <Position>4</Position>
     </column>
-    <column id="511" parent="504" name="ans_3">
+    <column id="512" parent="504" name="ans_3">
       <DasType>TEXT|0s</DasType>
       <Position>5</Position>
     </column>
-    <column id="512" parent="504" name="correct_answer">
+    <column id="513" parent="504" name="correct_answer">
       <DasType>int|0s</DasType>
       <Position>6</Position>
     </column>
-    <column id="513" parent="505" name="id">
+    <column id="514" parent="505" name="id">
       <DasType>int|0s</DasType>
       <Position>1</Position>
     </column>
-    <column id="514" parent="505" name="question">
+    <column id="515" parent="505" name="question">
       <DasType>TEXT|0s</DasType>
       <Position>2</Position>
     </column>
-    <column id="515" parent="505" name="ans_1">
+    <column id="516" parent="505" name="ans_1">
       <DasType>TEXT|0s</DasType>
       <Position>3</Position>
     </column>
-    <column id="516" parent="505" name="ans_2">
+    <column id="517" parent="505" name="ans_2">
       <DasType>TEXT|0s</DasType>
       <Position>4</Position>
     </column>
-    <column id="517" parent="505" name="ans_3">
+    <column id="518" parent="505" name="ans_3">
       <DasType>TEXT|0s</DasType>
       <Position>5</Position>
     </column>
-    <column id="518" parent="505" name="correct_answer">
+    <column id="519" parent="505" name="correct_answer">
       <DasType>int|0s</DasType>
       <Position>6</Position>
     </column>
-    <column id="519" parent="506" name="type">
-      <DasType>TEXT|0s</DasType>
+    <column id="520" parent="506" name="id">
+      <DasType>int|0s</DasType>
       <Position>1</Position>
     </column>
-    <column id="520" parent="506" name="name">
-      <DasType>TEXT|0s</DasType>
+    <column id="521" parent="506" name="question_number">
+      <DasType>int|0s</DasType>
       <Position>2</Position>
     </column>
-    <column id="521" parent="506" name="tbl_name">
+    <column id="522" parent="506" name="question">
       <DasType>TEXT|0s</DasType>
       <Position>3</Position>
     </column>
-    <column id="522" parent="506" name="rootpage">
+    <column id="523" parent="506" name="ans_1">
+      <DasType>TEXT|0s</DasType>
+      <Position>4</Position>
+    </column>
+    <column id="524" parent="506" name="ans_2">
+      <DasType>TEXT|0s</DasType>
+      <Position>5</Position>
+    </column>
+    <column id="525" parent="506" name="ans_3">
+      <DasType>TEXT|0s</DasType>
+      <Position>6</Position>
+    </column>
+    <column id="526" parent="506" name="correct_ans">
+      <DasType>int|0s</DasType>
+      <Position>7</Position>
+    </column>
+    <column id="527" parent="506" name="test_password">
+      <DasType>int|0s</DasType>
+      <Position>8</Position>
+    </column>
+    <column id="528" parent="507" name="type">
+      <DasType>TEXT|0s</DasType>
+      <Position>1</Position>
+    </column>
+    <column id="529" parent="507" name="name">
+      <DasType>TEXT|0s</DasType>
+      <Position>2</Position>
+    </column>
+    <column id="530" parent="507" name="tbl_name">
+      <DasType>TEXT|0s</DasType>
+      <Position>3</Position>
+    </column>
+    <column id="531" parent="507" name="rootpage">
       <DasType>INT|0s</DasType>
       <Position>4</Position>
     </column>
-    <column id="523" parent="506" name="sql">
+    <column id="532" parent="507" name="sql">
       <DasType>TEXT|0s</DasType>
       <Position>5</Position>
     </column>
