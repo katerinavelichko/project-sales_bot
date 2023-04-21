@@ -17,7 +17,11 @@ def set_main_menu():
         BotCommand(command='/help',
                    description='Помощь'),
         BotCommand(command='/addtest',
-                   description='Добавить тест')]
+                   description='Добавить тест'),
+        BotCommand(command='/choosetestb2b',
+                   description='Выбрать тест b2b'),
+        BotCommand(command='/choosetestb2c',
+                   description='Выбрать тест b2c')]
 
     bot.set_my_commands(main_menu_commands)
 
@@ -34,13 +38,20 @@ test = 0
 question_number = 1
 correct_option = -1
 result = 0
+level = 0
 
 
 @bot.message_handler(content_types=['text'])
 def get_text_messages(message):
-    global test_id, b2b_or_b2c, test_id, question_number, correct_option
-    sms2 = 'Вы можете выбрать один из 4 вариантов: '
+    global test_id, b2b_or_b2c, test_id, question_number, correct_option, test, result, level
+    sms2 = 'Вы можете выбрать один из 4 типов клиентов: '
     if message.text == "/start":
+        test_id = 2
+        b2b_or_b2c = 0
+        test = 0
+        question_number = 1
+        correct_option = -1
+        result = 0
         keyboard = types.InlineKeyboardMarkup()
         key_manager = types.InlineKeyboardButton(text='Менеджер', callback_data="manager")
         keyboard.add(key_manager)
@@ -55,6 +66,42 @@ def get_text_messages(message):
         send = bot.send_message(message.chat.id,
                                 'Создайте пароль для доступа к вашему тесту, он может состоять только цифр')
         bot.register_next_step_handler(send, ask_key_word)
+    elif message.text == '/choosetestb2b':
+        if str(test)[0] == "2":
+            bot.send_message(message.chat.id,
+                             'Вы проходили входной тест для B2C, поэтому можете выбрать тест только из этой категории. Нажмите "Выбрать тест b2c"')
+        else:
+            test = 1000
+            test += level
+            question_number = 1
+            keyboard = types.InlineKeyboardMarkup()
+            key_loyal = types.InlineKeyboardButton(text='Лояльный', callback_data='loyal_client')
+            key_new = types.InlineKeyboardButton(text='Новый', callback_data='new_client')
+            key_negative = types.InlineKeyboardButton(text='Негативный', callback_data='negative_client')
+            key_doubting = types.InlineKeyboardButton(text='Сомневающийся', callback_data='doubting_client')
+            keyboard.add(key_loyal)
+            keyboard.add(key_new)
+            keyboard.add(key_negative)
+            keyboard.add(key_doubting)
+            bot.send_message(message.from_user.id, 'Выберите тип клиента', reply_markup=keyboard)
+    elif message.text == '/choosetestb2c':
+        if str(test)[0] == "1":
+            bot.send_message(message.chat.id,
+                             'Вы проходили входной тест для B2B, поэтому можете выбрать тест только из этой категории. Нажмите "Выбрать тест b2b"')
+        else:
+            test = 2000
+            test += level
+            question_number = 1
+            keyboard = types.InlineKeyboardMarkup()
+            key_loyal = types.InlineKeyboardButton(text='Лояльный', callback_data='loyal_client')
+            key_new = types.InlineKeyboardButton(text='Новый', callback_data='new_client')
+            key_negative = types.InlineKeyboardButton(text='Негативный', callback_data='negative_client')
+            key_doubting = types.InlineKeyboardButton(text='Сомневающийся', callback_data='doubting_client')
+            keyboard.add(key_loyal)
+            keyboard.add(key_new)
+            keyboard.add(key_negative)
+            keyboard.add(key_doubting)
+            bot.send_message(message.from_user.id, 'Выберите тип клиента', reply_markup=keyboard)
     elif message.text == "Следующий вопрос":
         if b2b_or_b2c == 1:
             for value in cur.execute("SELECT * FROM entrance_test_b2b WHERE id=?", (test_id,)):
@@ -107,28 +154,72 @@ def get_text_messages(message):
             if question_number == 6:
                 bot.send_message(message.from_user.id, 'Тест завершён.',
                                  reply_markup=types.ReplyKeyboardRemove())
-
     else:
         bot.send_message(message.from_user.id, "Я вас не понимаю. Напишите /help.")
 
 
 @bot.poll_answer_handler()
 def handle_poll_answer(poll_answer):
-    global result, correct_option, test_id, b2b_or_b2c
+    global result, correct_option, test_id, b2b_or_b2c, test, level
     selected_option = poll_answer.option_ids[0]
     if correct_option == selected_option:
         result += 1
     if test_id == 25 and b2b_or_b2c == 0:
         b2b_or_b2c = 2
         bot.send_message(poll_answer.user.id, f'Вы набрали {result} баллов из 25')
+        if result <= 25 and result >= 23:
+            test += 300
+            level += 300
+            bot.send_message(poll_answer.user.id,
+                             'На данный момент ваш уровень - эксперт. Вам будут предложены тесты из этой категории')
+        elif result <= 22 and result >= 20:
+            test += 200
+            level += 200
+            bot.send_message(poll_answer.user.id,
+                             'На данный момент ваш уровень - продвинутый. Вам будут предложены тесты из этой категории')
+        elif result <= 19:
+            test += 100
+            level += 100
+            bot.send_message(poll_answer.user.id,
+                             'На данный момент ваш уровень - новичок. Вам будут предложены тесты из этой категории')
         result = 0
     elif test_id == 29 and b2b_or_b2c == 1:
         b2b_or_b2c = 2
         bot.send_message(poll_answer.user.id, f'Вы набрали {result} баллов из 29')
+        if result <= 25 and result >= 23:
+            test += 300
+            level += 300
+            bot.send_message(poll_answer.user.id,
+                             'На данный момент ваш уровень - эксперт. Вам будут предложены тесты из этой категории')
+        elif result <= 22 and result >= 20:
+            test += 200
+            level += 200
+            bot.send_message(poll_answer.user.id,
+                             'На данный момент ваш уровень - продвинутый. Вам будут предложены тесты из этой категории')
+        elif result <= 19:
+            test += 100
+            level += 100
+            bot.send_message(poll_answer.user.id,
+                             'На данный момент ваш уровень - новичок. Вам будут предложены тесты из этой категории')
         result = 0
     elif question_number == 6 and b2b_or_b2c == 2:
         b2b_or_b2c = 2
         bot.send_message(poll_answer.user.id, f'Вы набрали {result} баллов из 5')
+        if result <= 25 and result >= 23:
+            test += 300
+            level += 300
+            bot.send_message(poll_answer.user.id,
+                             'На данный момент ваш уровень - эксперт. Вам будут предложены тесты из этой категории')
+        elif result <= 22 and result >= 20:
+            test += 200
+            level += 200
+            bot.send_message(poll_answer.user.id,
+                             'На данный момент ваш уровень - продвинутый. Вам будут предложены тесты из этой категории')
+        elif result <= 19:
+            test += 100
+            level += 100
+            bot.send_message(poll_answer.user.id,
+                             'На данный момент ваш уровень - новичок. Вам будут предложены тесты из этой категории')
         result = 0
 
 
@@ -201,13 +292,13 @@ def callback_worker(call):
                                  reply_markup=markup)
     elif call.data == 'loyal_client' or call.data == 'new_client' or call.data == 'negative_client' or call.data == 'doubting_client':
         if call.data == 'loyal_client':
-            test += 100
+            test += 10
         elif call.data == 'new_client':
-            test += 200
+            test += 20
         elif call.data == 'negative_client':
-            test += 300
+            test += 30
         elif call.data == 'doubting_client':
-            test += 400
+            test += 40
         sms3 = 'Давайте выберем форму коммуникации'
         keyboard = types.InlineKeyboardMarkup()
         key_phone = types.InlineKeyboardButton(text='Телефон', callback_data='phone_communication')
@@ -219,30 +310,14 @@ def callback_worker(call):
         bot.send_message(call.message.chat.id, sms3, reply_markup=keyboard)
     elif call.data == 'phone_communication' or call.data == 'meet_communication' or call.data == 'message_communication':
         if call.data == 'phone_communication':
-            test += 10
-        elif call.data == 'meet_communication':
-            test += 20
-        elif call.data == 'message_communication':
-            test += 30
-        sms4 = 'Осталось выбрать уровень'
-        keyboard = types.InlineKeyboardMarkup()
-        key_level1 = types.InlineKeyboardButton(text='Новичок', callback_data='level1')
-        key_level2 = types.InlineKeyboardButton(text='Продвинутый', callback_data='level2')
-        key_level3 = types.InlineKeyboardButton(text='Эксперт', callback_data='level3')
-        keyboard.add(key_level1)
-        keyboard.add(key_level2)
-        keyboard.add(key_level3)
-        bot.send_message(call.message.chat.id, sms4, reply_markup=keyboard)
-    elif call.data == 'level1' or call.data == 'level2' or call.data == 'level3':
-        sms5 = 'Поздравляю! Вы готовы проходить тест. Он будет сгенеривован нашей системой.'
-        if call.data == 'level1':
             test += 1
-        elif call.data == 'level2':
+        elif call.data == 'meet_communication':
             test += 2
-        elif call.data == 'level3':
+        elif call.data == 'message_communication':
             test += 3
+        sms5 = 'Поздравляю! Вы готовы проходить тест. Он будет сгенеривован нашей системой.'
         bot.send_message(call.message.chat.id, sms5)
-    if test in [2211, 2221, 2231, 2111, 2121, 2123]:
+    if test in [2121, 2122, 2123, 2111, 2112, 2113, 2131, 2132, 2133, 2141, 2142, 2143]:
         for value in cur.execute("SELECT * FROM main_tests WHERE test_password=? AND question_number=?",
                                  (test, question_number,)):
             answers = [value[3], value[4], value[5]]
