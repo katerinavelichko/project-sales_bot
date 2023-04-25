@@ -3,6 +3,7 @@ from telebot import types
 from telebot.types import BotCommand
 import sqlite3
 
+
 bot = telebot.TeleBot('5844570225:AAHVbCClhE53DdtM-RpZ1vKjrPPB4j_I538', 'markdown')
 con = sqlite3.connect("server.db", check_same_thread=False)
 cur = con.cursor()
@@ -21,7 +22,10 @@ def set_main_menu():
         BotCommand(command='/choosetestb2b',
                    description='Выбрать тест b2b'),
         BotCommand(command='/choosetestb2c',
-                   description='Выбрать тест b2c')]
+                   description='Выбрать тест b2c'),
+        BotCommand(command='/show_statistic',
+                   description='Просмотр статистики')
+    ]
 
     bot.set_my_commands(main_menu_commands)
 
