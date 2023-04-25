@@ -334,138 +334,111 @@ def callback_worker(call):
                          reply_markup=markup)
 
 
-global current_state
-current_state = []
-key_word = {}
+from collections import defaultdict
 
+user_id_to_keywords = defaultdict(list)
+test_id_to_numbers = defaultdict(list)
+test_id_to_ans = defaultdict(list)
+states = defaultdict(list)
 
 @bot.message_handler()
 def ask_key_word(message):
-    msg = message.text
-    msg = "'" + msg + "'"
-    info_msg = cursor.execute("SELECT * FROM testbase WHERE test_id =" + str(msg)).fetchall()
-    user_to = message.from_user.id
-    key_word[user_to] = []
-    key_word[user_to].append(msg)
-    key_word[user_to].append(info_msg)
-    while len(info_msg) > 0:
-        current_state.append('receiving')
-        send = bot.send_message(message.chat.id, 'Такой  пароль для доступа уже существует, придумайте новый')
-        bot.register_next_step_handler(send, make_key_word)
-        while (current_state[-1] != 'answering'):
-            current_state_str = 'receiving'
-            if current_state[-1] == 'answering':
-                break
-        info_msg = key_word[user_to][1]
-    send = bot.send_message(message.chat.id, 'Ваш пароль успешно добавлен. Введите количество вопросов')
-    bot.register_next_step_handler(send, numbers)
-
-
-def make_key_word(message):
-    msg = message.text
-    user_to = message.from_user.id
-    msg = "'" + msg + "'"
-    info_msg = cursor.execute("SELECT * FROM testbase WHERE test_id = " + str(msg)).fetchall()
-    if len(info_msg) == 0:
-        key_word[user_to][0] = msg
-    key_word[user_to].append(info_msg)
-    current_state.append('answering')
+    keyword = message.text
+    keyword_list = cursor.execute(f"SELECT * FROM testbase WHERE test_id ='{keyword}'").fetchall()
+    if len(keyword_list) > 0:
+        msg = bot.send_message(message.chat.id, 'Такой  пароль для доступа уже существует, придумайте новый')
+        bot.register_next_step_handler(msg, ask_key_word)
+    else:
+        user_id = message.from_user.id
+        user_id_to_keywords[user_id].append(keyword)
+        msg = bot.send_message(message.chat.id, 'Ваш пароль успешно добавлен.')
+        cursor.execute(
+            'INSERT INTO testbase (question_number,test_id) VALUES (?, ?)',
+            (1, keyword))
+        conn.commit()
+        msg = bot.send_message(message.chat.id, 'Введите количество вопросов')
+        bot.register_next_step_handler(msg, numbers)
 
 
 @bot.message_handler()
 def numbers(message):
-    global i
-    global j
-    i = 0
     amount = message.text.split()[0]
+    user_id = message.from_user.id
+    keyword = user_id_to_keywords[user_id][-1]
     while (amount.isdigit() == False):
-        current_state.append('receiving')
         send = bot.send_message(message.chat.id, 'Введите число, а не текст')
-        bot.register_next_step_handler(send, read_number)
-        while (current_state[-1] != 'answering'):
-            current_state_str = 'receiving'
-            if current_state[-1] == 'answering':
-                break
-        amount = current_state[-2]
-    while (i != int(amount)):
-        current_state.append('receiving')
-        send = bot.send_message(message.chat.id, f'Введите {i + 1}-й вопрос')
-        bot.register_next_step_handler(send, questions)
-        while (current_state[-1] != 'answering'):
-            current_state_str = 'receiving'
-            if current_state[-1] == 'answering':
-                break
-        j = 0
-        while (j != 4):
-            current_state.append('receiving')
-            send = bot.send_message(message.chat.id, f'Введите {j + 1}-й вариант ответа')
-            bot.register_next_step_handler(send, answers)
-            while (current_state[-1] != 'answering'):
-                current_state_str = 'receiving'
-                if current_state[-1] == 'answering':
-                    break
-            j += 1
-        current_state.append('receiving')
-        send = bot.send_message(message.chat.id, f'Введите номер правильного ответа')
-        bot.register_next_step_handler(send, answers)
-        while (current_state[-1] != 'answering'):
-            current_state_str = 'receiving'
-            if current_state[-1] == 'answering':
-                break
-        i += 1
-    current_state.clear()
+        bot.register_next_step_handler(send, numbers)
+    test_id_to_numbers[keyword].append(amount)
+    send = bot.send_message(message.chat.id, 'Введите 1-й вопрос')
+    bot.register_next_step_handler(send, read_questions)
 
 
-def read_number(message):
-    amount = message.text
-    if amount.isdigit() == True:
-        current_state.append(amount)
-    current_state.append('answering')
-
-
-def questions(message):
-    last = message.text
-    user_to = message.from_user.id
-    user_to = key_word[user_to][0]
-    user_to = int(user_to[1:-1])
-    add_question(i + 1, last, user_to)
-    current_state.append('answering')
-
-
-def answers(message):
-    ans = message.text
-    user_to = message.from_user.id
-    user_to = key_word[user_to][0]
-    user_to = int(user_to[1:-1])
-    add_ans(ans, user_to, i + 1, j + 1)
-    current_state.append('answering')
-
-
-def add_test(question_number, question, ans_1, ans_2, ans_3, ans_4, right_ans, test_id):
-    cursor.execute(
-        'INSERT INTO testbase (question_number, question, ans_1 ,ans_2 ,ans_3,ans_4, right_ans, test_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-        (question_number, question, ans_1, ans_2, ans_3, ans_4, right_ans, test_id))
-    conn.commit()
-
-
-def add_question(question_number, question, test_id):
-    cursor.execute(
-        'INSERT INTO testbase (question_number,question, test_id) VALUES (?,?, ?)',
-        (question_number, question, test_id))
-    conn.commit()
-
-
-def add_ans(ans, test_id, question_number, j_t):
-    if (j_t != 5):
-        answer = 'ans_'
-        answer += str(j_t)
-    else:
-        answer = 'right_ans'
-    string = 'UPDATE testbase SET ' + answer + '= ? WHERE test_id=? and question_number=?'
+def read_questions(message):
+    msg = message.text
+    user_id = message.from_user.id
+    keyword = user_id_to_keywords[user_id][-1]
+    amount = int(test_id_to_numbers[keyword][0])
+    if len(test_id_to_numbers[keyword]) == 1:
+        test_id_to_numbers[keyword].append(1)
+    elif len(test_id_to_numbers[keyword]) == 2:
+        test_id_to_numbers[keyword].append(2)
+        string = 'INSERT INTO testbase (question_number,test_id) VALUES(?,?)'
+        cursor.execute(
+            string,
+            (2, keyword))
+        conn.commit()
+    elif len(test_id_to_numbers[keyword]) > 2:
+        quest_num = int(test_id_to_numbers[keyword][-1]) + 1
+        test_id_to_numbers[keyword].append(quest_num)
+        string = 'INSERT INTO testbase (question_number,test_id) VALUES(?,?)'
+        cursor.execute(
+            string,
+            (quest_num, keyword))
+        conn.commit()
+    string = 'UPDATE testbase SET question = ? WHERE test_id=? and question_number=?'
     cursor.execute(
         string,
-        (ans, test_id, question_number))
+        (msg, keyword, int(test_id_to_numbers[keyword][-1])))
     conn.commit()
+    send = bot.send_message(message.chat.id, f'Введите 1-й вариант ответа')
+    bot.register_next_step_handler(send, read_ans)
+    states[keyword].append('receiving')
+    while (states[keyword][-1] != 'answering'):
+        if states[keyword][-1] == 'answering':
+            break
+    if int(test_id_to_numbers[keyword][-1]) + 1 <= int(test_id_to_numbers[keyword][0]):
+        send = bot.send_message(message.chat.id, f'Введите {int(test_id_to_numbers[keyword][-1]) + 1}-й вопрос')
+        bot.register_next_step_handler(send, read_questions)
+
+
+
+def read_ans(message):
+    msg = message.text
+    user_id = message.from_user.id
+    keyword = user_id_to_keywords[user_id][-1]
+    if len(test_id_to_ans[keyword]) == 0:
+        test_id_to_ans[keyword].append(2)
+    else:
+        test_id_to_ans[keyword].append(test_id_to_ans[keyword][-1]+1)
+    if test_id_to_ans[keyword][-1]==6:
+        answer = 'right_ans'
+    elif test_id_to_ans[keyword][-1]<6:
+        answer='ans_'+str(test_id_to_ans[keyword][-1]-1)
+    if len(test_id_to_ans[keyword])<=5:
+        string = 'UPDATE testbase SET ' +answer+' = ? WHERE test_id=? and question_number=?'
+        cursor.execute(
+            string,
+            (msg, keyword, int(test_id_to_numbers[keyword][-1])))
+        conn.commit()
+    if  test_id_to_ans[keyword][-1]<5:
+        send = bot.send_message(message.chat.id, f'Введите {int(test_id_to_ans[keyword][-1])}-й вариант ответа')
+        bot.register_next_step_handler(send, read_ans)
+    if test_id_to_ans[keyword][-1]==5:
+        send = bot.send_message(message.chat.id, f'Введите номер правильного варианта ответа')
+        bot.register_next_step_handler(send, read_ans)
+    if test_id_to_ans[keyword][-1] == 6:
+        test_id_to_ans[keyword].clear()
+        states[keyword].append('answering')
 
 
 if __name__ == '__main__':
