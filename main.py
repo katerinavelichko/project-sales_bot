@@ -2,6 +2,7 @@ import telebot
 from telebot import types
 from telebot.types import BotCommand
 import sqlite3
+import json
 
 bot = telebot.TeleBot('5844570225:AAHVbCClhE53DdtM-RpZ1vKjrPPB4j_I538', 'markdown')
 con = sqlite3.connect("server.db", check_same_thread=False)
@@ -21,7 +22,10 @@ def set_main_menu():
         BotCommand(command='/choosetestb2b',
                    description='Выбрать тест b2b'),
         BotCommand(command='/choosetestb2c',
-                   description='Выбрать тест b2c')]
+                   description='Выбрать тест b2c'),
+        BotCommand(command='/show_statistic',
+                   description='Просмотр статистики')
+    ]
 
     bot.set_my_commands(main_menu_commands)
 
@@ -42,7 +46,7 @@ level = 0
 
 
 @bot.message_handler(content_types=['text'])
-def get_text_messages(message):
+def get_text_messages(message, massege=None):
     global test_id, b2b_or_b2c, test_id, question_number, correct_option, test, result, level
     sms2 = 'Вы можете выбрать один из 4 типов клиентов: '
     if message.text == "/start":
@@ -60,6 +64,11 @@ def get_text_messages(message):
         bot.send_message(message.from_user.id, 'Выберите вашу роль', reply_markup=keyboard)
     elif message.text == "/help":
         bot.send_message(message.from_user.id, "Напишите /start")
+    elif message.text == "/show_statistic":
+        murkup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        webAppTest = types.WebAppInfo("https://anyashishkina.github.io/test_repository/")
+        murkup.add(types.InlineKeyboardButton('Посмотреть статистику', web_app=webAppTest))
+        bot.send_message(message.chat.id, 'Статистика!', reply_markup=murkup)
     elif message.text == "Привет":
         bot.send_message(message.from_user.id, "Здравствуйте! Напишите /help")
     elif message.text.lower() == 'добавить тест' or message.text.lower() == '/addtest':
@@ -110,19 +119,13 @@ def get_text_messages(message):
                 bot.send_poll(chat_id=message.chat.id, question=value[1], options=answers, type='quiz',
                               correct_option_id=value[5], open_period=30, is_anonymous=False)
                 test_id += 1
-                if test_id == 29:
-                    bot.send_message(message.from_user.id, 'Входной тест завершён.',
-                                     reply_markup=types.ReplyKeyboardRemove())
-                    keyboard = types.InlineKeyboardMarkup()
-                    key_loyal = types.InlineKeyboardButton(text='Лояльный', callback_data='loyal_client')
-                    key_new = types.InlineKeyboardButton(text='Новый', callback_data='new_client')
-                    key_negative = types.InlineKeyboardButton(text='Негативный', callback_data='negative_client')
-                    key_doubting = types.InlineKeyboardButton(text='Сомневающийся', callback_data='doubting_client')
-                    keyboard.add(key_loyal)
-                    keyboard.add(key_new)
-                    keyboard.add(key_negative)
-                    keyboard.add(key_doubting)
-                    bot.send_message(message.chat.id, sms2, reply_markup=keyboard)
+                if test_id == 4:
+                # if test_id == 29:
+                    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+                    button_next_question = types.KeyboardButton('Выбрать тест')
+                    markup.row(button_next_question)
+                    bot.send_message(message.from_user.id, 'Нажмите кнопку "Выбрать тест", когда будете готовы.',
+                                     reply_markup=markup)
         elif b2b_or_b2c == 0:
             for value in cur.execute("SELECT * FROM entrance_test_b2c WHERE id=?", (test_id,)):
                 answers = [value[2], value[3], value[4]]
@@ -130,19 +133,13 @@ def get_text_messages(message):
                 bot.send_poll(chat_id=message.chat.id, question=value[1], options=answers, type='quiz',
                               correct_option_id=value[5], open_period=30, is_anonymous=False)
                 test_id += 1
-                if test_id == 25:
-                    bot.send_message(message.from_user.id, 'Входной тест завершён.',
-                                     reply_markup=types.ReplyKeyboardRemove())
-                    keyboard = types.InlineKeyboardMarkup()
-                    key_loyal = types.InlineKeyboardButton(text='Лояльный', callback_data='loyal_client')
-                    key_new = types.InlineKeyboardButton(text='Новый', callback_data='new_client')
-                    key_negative = types.InlineKeyboardButton(text='Негативный', callback_data='negative_client')
-                    key_doubting = types.InlineKeyboardButton(text='Сомневающийся', callback_data='doubting_client')
-                    keyboard.add(key_loyal)
-                    keyboard.add(key_new)
-                    keyboard.add(key_negative)
-                    keyboard.add(key_doubting)
-                    bot.send_message(message.chat.id, sms2, reply_markup=keyboard)
+                if test_id == 4:
+                # if test_id == 25:
+                    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+                    button_next_question = types.KeyboardButton('Выбрать тест')
+                    markup.row(button_next_question)
+                    bot.send_message(message.from_user.id, 'Нажмите кнопку "Выбрать тест", когда будете готовы.',
+                                     reply_markup=markup)
         else:
             for value in cur.execute("SELECT * FROM main_tests WHERE test_password=? AND question_number=?",
                                      (test, question_number,)):
@@ -151,9 +148,21 @@ def get_text_messages(message):
                 bot.send_poll(chat_id=message.chat.id, question=value[2], options=answers, type='quiz',
                               correct_option_id=value[6], open_period=30, is_anonymous=False)
                 question_number += 1
-            if question_number == 6:
+            if question_number == 4:
                 bot.send_message(message.from_user.id, 'Тест завершён.',
                                  reply_markup=types.ReplyKeyboardRemove())
+    elif message.text == 'Выбрать тест':
+        bot.send_message(message.chat.id, "Вам предстоит выбрать тип клиента и форму коммуникаций", reply_markup=types.ReplyKeyboardRemove())
+        keyboard = types.InlineKeyboardMarkup()
+        key_loyal = types.InlineKeyboardButton(text='Лояльный', callback_data='loyal_client')
+        key_new = types.InlineKeyboardButton(text='Новый', callback_data='new_client')
+        key_negative = types.InlineKeyboardButton(text='Негативный', callback_data='negative_client')
+        key_doubting = types.InlineKeyboardButton(text='Сомневающийся', callback_data='doubting_client')
+        keyboard.add(key_loyal)
+        keyboard.add(key_new)
+        keyboard.add(key_negative)
+        keyboard.add(key_doubting)
+        bot.send_message(message.chat.id, sms2, reply_markup=keyboard)
     else:
         bot.send_message(message.from_user.id, "Я вас не понимаю. Напишите /help.")
 
@@ -164,15 +173,16 @@ def handle_poll_answer(poll_answer):
     selected_option = poll_answer.option_ids[0]
     if correct_option == selected_option:
         result += 1
-    if test_id == 25 and b2b_or_b2c == 0:
+    if test_id == 4 and b2b_or_b2c == 0:
+    # if test_id == 25 and b2b_or_b2c == 0:
         b2b_or_b2c = 2
         bot.send_message(poll_answer.user.id, f'Вы набрали {result} баллов из 25')
-        if result <= 25 and result >= 23:
+        if 25 >= result >= 23:
             test += 300
             level += 300
             bot.send_message(poll_answer.user.id,
                              'На данный момент ваш уровень - эксперт. Вам будут предложены тесты из этой категории')
-        elif result <= 22 and result >= 20:
+        elif 22 >= result >= 20:
             test += 200
             level += 200
             bot.send_message(poll_answer.user.id,
@@ -183,15 +193,16 @@ def handle_poll_answer(poll_answer):
             bot.send_message(poll_answer.user.id,
                              'На данный момент ваш уровень - новичок. Вам будут предложены тесты из этой категории')
         result = 0
-    elif test_id == 29 and b2b_or_b2c == 1:
+    elif test_id == 4 and b2b_or_b2c == 1:
+    # elif test_id == 29 and b2b_or_b2c == 1:
         b2b_or_b2c = 2
         bot.send_message(poll_answer.user.id, f'Вы набрали {result} баллов из 29')
-        if result <= 25 and result >= 23:
+        if 25 >= result >= 23:
             test += 300
             level += 300
             bot.send_message(poll_answer.user.id,
                              'На данный момент ваш уровень - эксперт. Вам будут предложены тесты из этой категории')
-        elif result <= 22 and result >= 20:
+        elif 22 >= result >= 20:
             test += 200
             level += 200
             bot.send_message(poll_answer.user.id,
@@ -202,25 +213,21 @@ def handle_poll_answer(poll_answer):
             bot.send_message(poll_answer.user.id,
                              'На данный момент ваш уровень - новичок. Вам будут предложены тесты из этой категории')
         result = 0
-    elif question_number == 6 and b2b_or_b2c == 2:
+    elif question_number == 4 and b2b_or_b2c == 2:
         b2b_or_b2c = 2
-        bot.send_message(poll_answer.user.id, f'Вы набрали {result} баллов из 5')
-        if result <= 25 and result >= 23:
-            test += 300
-            level += 300
-            bot.send_message(poll_answer.user.id,
-                             'На данный момент ваш уровень - эксперт. Вам будут предложены тесты из этой категории')
-        elif result <= 22 and result >= 20:
-            test += 200
-            level += 200
-            bot.send_message(poll_answer.user.id,
-                             'На данный момент ваш уровень - продвинутый. Вам будут предложены тесты из этой категории')
-        elif result <= 19:
-            test += 100
-            level += 100
-            bot.send_message(poll_answer.user.id,
-                             'На данный момент ваш уровень - новичок. Вам будут предложены тесты из этой категории')
+        bot.send_message(poll_answer.user.id, f'Вы набрали {result} баллов из 3')
         result = 0
+
+
+@bot.message_handler(content_types=['web_app_data'])
+def web_app(message: types.Message):
+    res = json.loads(message.web_app_data.data)
+    first_name = res.get("first_name")
+    last_name = res.get("last_name")
+    if first_name is not None and last_name is not None:
+        bot.send_message(message.from_user.id, f'Имя: {first_name}\nФамилия: {last_name}', reply_markup=types.ReplyKeyboardRemove())
+    else:
+        bot.send_message(message.from_user.id, "Данные отсутствуют", reply_markup=types.ReplyKeyboardRemove())
 
 
 @bot.callback_query_handler(func=lambda call: True)
@@ -315,7 +322,7 @@ def callback_worker(call):
             test += 2
         elif call.data == 'message_communication':
             test += 3
-        sms5 = 'Поздравляю! Вы готовы проходить тест. Он будет сгенеривован нашей системой.'
+        sms5 = 'Поздравляю! Вы готовы проходить тест. Он будет сгенерирован нашей системой.'
         bot.send_message(call.message.chat.id, sms5)
     if test in [2121, 2122, 2123, 2111, 2112, 2113, 2131, 2132, 2133, 2141, 2142, 2143]:
         for value in cur.execute("SELECT * FROM main_tests WHERE test_password=? AND question_number=?",
@@ -340,6 +347,7 @@ user_id_to_keywords = defaultdict(list)
 test_id_to_numbers = defaultdict(list)
 test_id_to_ans = defaultdict(list)
 states = defaultdict(list)
+
 
 @bot.message_handler()
 def ask_key_word(message):
@@ -411,7 +419,6 @@ def read_questions(message):
         bot.register_next_step_handler(send, read_questions)
 
 
-
 def read_ans(message):
     msg = message.text
     user_id = message.from_user.id
@@ -419,21 +426,21 @@ def read_ans(message):
     if len(test_id_to_ans[keyword]) == 0:
         test_id_to_ans[keyword].append(2)
     else:
-        test_id_to_ans[keyword].append(test_id_to_ans[keyword][-1]+1)
-    if test_id_to_ans[keyword][-1]==6:
+        test_id_to_ans[keyword].append(test_id_to_ans[keyword][-1] + 1)
+    if test_id_to_ans[keyword][-1] == 6:
         answer = 'right_ans'
-    elif test_id_to_ans[keyword][-1]<6:
-        answer='ans_'+str(test_id_to_ans[keyword][-1]-1)
-    if len(test_id_to_ans[keyword])<=5:
-        string = 'UPDATE testbase SET ' +answer+' = ? WHERE test_id=? and question_number=?'
+    elif test_id_to_ans[keyword][-1] < 6:
+        answer = 'ans_' + str(test_id_to_ans[keyword][-1] - 1)
+    if len(test_id_to_ans[keyword]) <= 5:
+        string = 'UPDATE testbase SET ' + answer + ' = ? WHERE test_id=? and question_number=?'
         cursor.execute(
             string,
             (msg, keyword, int(test_id_to_numbers[keyword][-1])))
         conn.commit()
-    if  test_id_to_ans[keyword][-1]<5:
+    if test_id_to_ans[keyword][-1] < 5:
         send = bot.send_message(message.chat.id, f'Введите {int(test_id_to_ans[keyword][-1])}-й вариант ответа')
         bot.register_next_step_handler(send, read_ans)
-    if test_id_to_ans[keyword][-1]==5:
+    if test_id_to_ans[keyword][-1] == 5:
         send = bot.send_message(message.chat.id, f'Введите номер правильного варианта ответа')
         bot.register_next_step_handler(send, read_ans)
     if test_id_to_ans[keyword][-1] == 6:
