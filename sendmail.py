@@ -1,11 +1,7 @@
 import smtplib
-from email_validate import validate
 from email.mime.text import MIMEText
 from jinja2 import Template
 
-
-def check_email(email):
-    return validate(email_address=email)
 
 
 # to = "katevlchkk@gmail.com"
