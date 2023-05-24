@@ -3,6 +3,11 @@ from telebot import types
 from telebot.types import BotCommand
 import sqlite3
 import json
+import smtplib
+from email_validate import validate
+from email.mime.text import MIMEText
+from jinja2 import Template
+from sendmail import check_email,mas_to_string, send_email
 
 bot = telebot.TeleBot('5844570225:AAHVbCClhE53DdtM-RpZ1vKjrPPB4j_I538', 'markdown')
 con = sqlite3.connect("server.db", check_same_thread=False)
