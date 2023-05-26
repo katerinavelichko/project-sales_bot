@@ -3,6 +3,10 @@ from telebot import types
 from telebot.types import BotCommand
 import sqlite3
 import json
+import smtplib
+from email.mime.text import MIMEText
+from jinja2 import Template
+from sendmail import mas_to_string, send_email
 
 bot = telebot.TeleBot('5844570225:AAHVbCClhE53DdtM-RpZ1vKjrPPB4j_I538', 'markdown')
 con = sqlite3.connect("server.db", check_same_thread=False)
@@ -146,6 +150,19 @@ def get_text_messages(message, massege=None):
                     markup.row(button_next_question)
                     bot.send_message(message.from_user.id, 'Нажмите кнопку "Выбрать тест", когда будете готовы.',
                                      reply_markup=markup)
+        elif b2b_or_b2c == 3:
+            for value in cursor.execute("SELECT * FROM testbase WHERE question_number=?",
+                                        (question_number,)):
+                answers = [value[2], value[3], value[4], value[5]]
+                bot.send_poll(chat_id=message.chat.id, question=value[1], options=answers, type='quiz',
+                              correct_option_id=value[6], open_period=30, is_anonymous=False)
+                question_number+=1
+                if question_number==num_questions:
+                    # msg = bot.send_message(message.chat.id, 'Ваш тест закончен')
+                    # bot.register_next_step_handler(msg, next)
+                    # global flag
+                    # flag= True
+                    break
         else:
             for value in cur.execute("SELECT * FROM main_tests WHERE test_password=? AND question_number=?",
                                      (test, question_number,)):
@@ -178,8 +195,12 @@ def get_text_messages(message, massege=None):
 def handle_poll_answer(poll_answer):
     global result, correct_option, test_id, b2b_or_b2c, test, level
     selected_option = poll_answer.option_ids[0]
+    # global flag
     if correct_option == selected_option:
         result += 1
+    # if b2b_or_b2c == 3 and flag==True:
+    #     flag == False
+    #     bot.send_message(poll_answer.user.id, f'Вы набрали {result} баллов из {num_questions}')
     if test_id == 4 and b2b_or_b2c == 0:
         # if test_id == 25 and b2b_or_b2c == 0:
         b2b_or_b2c = 2
@@ -241,6 +262,7 @@ def web_app(message: types.Message):
 @bot.callback_query_handler(func=lambda call: True)
 def callback_worker(call):
     global b2b_or_b2c, test, question_number, correct_option, test_id
+    global test_boss_key
     if call.data == "manager" or "boss":
         if call.data == "manager":
             bot.send_message(call.from_user.id, "Вам предстоит выбрать тип продаж. ")
@@ -251,6 +273,8 @@ def callback_worker(call):
             keyboard.add(key_b2b)
             key_b2c = types.InlineKeyboardButton(text='B2C', callback_data="typeofclientc")
             keyboard.add(key_b2c)
+            key_boss = types.InlineKeyboardButton(text='тест от босса', callback_data="bosstest")
+            keyboard.add(key_boss)
             b2c_msg = "B2C(Business to Consumer) предполагает продажу товаров,услуг физическим лицам/конечным потребителям."
             bot.send_message(call.from_user.id, b2c_msg, reply_markup=keyboard)
         elif call.data == "boss":
@@ -352,6 +376,10 @@ def callback_worker(call):
         bot.send_message(call.message.chat.id,
                          'Когда будете готовы перейти к следующему вопросу, нажмите кнопку "Следующий вопрос" ',
                          reply_markup=markup)
+    if call.data == "bosstest":
+        b2b_or_b2c = 3
+        msg = bot.send_message(call.message.chat.id, 'введите пароль от теста')
+        bot.register_next_step_handler(msg, ask_key_word_bosstest)
 
 
 def set_boss(message):
@@ -371,6 +399,41 @@ test_id_to_numbers = defaultdict(list)
 test_id_to_ans = defaultdict(list)
 states = defaultdict(list)
 user_to_keywords = defaultdict(list)
+
+
+@bot.message_handler()
+def ask_key_word_bosstest(message):
+    global test_boss_key
+    test_boss_key = message.text
+    test_boss_key = int(test_boss_key)
+    msg = bot.send_message(message.chat.id, 'Вы готовы начать? Напишите: да или нет')
+    bot.register_next_step_handler(msg, test_from_boss)
+
+
+@bot.message_handler()
+def test_from_boss(message):
+    msgg = message.text
+    global num_questions, question_number
+    num_questions = cursor.execute('SELECT COUNT(*) FROM testbase WHERE test_id=?', (test_boss_key,)).fetchone()[0]
+    question_number=1
+    for value in cursor.execute("SELECT * FROM testbase WHERE question_number=? AND test_id=?",
+                                (question_number, test_boss_key,)):
+        answers = [value[2], value[3], value[4], value[5]]
+        bot.send_poll(chat_id=message.chat.id, question=value[1], options=answers, type='quiz',
+                      correct_option_id=value[6], open_period=30, is_anonymous=False)
+        #handle_poll_answer(poll_answer)
+        # cursor.execute(
+        #     'INSERT INTO test_results (user_id,test_id, ) VALUES (?, ?)',
+        #     (1, keyword))
+        # conn.commit()
+        question_number+=1
+        break
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        button_next_question = types.KeyboardButton('Следующий вопрос')
+        markup.row(button_next_question)
+        bot.send_message(message.chat.id,
+                         'Когда будете готовы перейти к следующему вопросу, нажмите кнопку "Следующий вопрос" ',
+                         reply_markup=markup)
 
 
 @bot.message_handler()
@@ -405,6 +468,10 @@ def numbers(message):
     test_id_to_numbers[keyword].append(amount)
     send = bot.send_message(message.chat.id, 'Введите 1-й вопрос')
     bot.register_next_step_handler(send, read_questions)
+
+@bot.message_handler()
+def next(message):
+    amount = message.text
 
 
 def read_questions(message):
