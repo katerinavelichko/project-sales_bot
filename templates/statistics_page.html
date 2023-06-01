@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Heatmap</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        .center {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+    </style>
+</head>
+<body>
+    <h1>Статистика</h1>
+    <div class="center">
+        <div id="heatmap"></div>
+    </div>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script>
+
+
+        // Получение данных из Flask
+        var data = {{ matrix|tojson|safe }};
+        var layout = {
+            title: 'Результаты тестов',
+            xaxis: {
+                title: 'Состояние клиента',
+                tickmode: 'array',
+                tickvals: [0, 1, 2, 3],
+                ticktext: ['Лояльный', 'Новый', 'Негативный', 'Сомневающийся']
+            },
+            yaxis: {
+                title: 'Способ общения',
+                tickmode: 'array',
+                tickangle: 45,
+                tickvals: [0, 1, 2],
+                ticktext: ['Телефон', 'Встреча', 'Переписка']
+            },
+            autosize: false,
+            width: 1000,
+            height: 500
+        };
+
+        var heatmapData = [
+            {
+                z: data,
+                type: 'heatmap'
+            }
+        ];
+
+        Plotly.newPlot('heatmap', heatmapData, layout);
+    </script>
+</body>
+</html>

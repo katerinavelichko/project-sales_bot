@@ -8,7 +8,10 @@ from email.mime.text import MIMEText
 from jinja2 import Template
 from sendmail import mas_to_string, send_email, ask_boss
 import queue
-
+import requests
+from html2image import Html2Image
+from PIL import Image
+from flask import Flask, render_template
 import threading
 
 mutex = threading.Lock()
@@ -65,9 +68,50 @@ result = 0
 level = 0
 
 
+# эта функция обрезает чёрный фон вокруг картинки со статистикой
+def crop_background(file_name):
+    im = Image.open(file_name)
+    pixels = im.load()  # список с пикселями
+    x, y = im.size  # ширина (x) и высота (y) изображения
+
+    # левая граница обрезки
+    left = 0
+    for i in range(x):
+        if max(max(pixels[i, j][:3]) for j in range(y)) == 0:
+            left += 1
+        else:
+            break
+
+    # правая граница обрезки
+    right = 0
+    for i in range(x - 1, -1, -1):
+        if max(max(pixels[i, j][:3]) for j in range(y)) == 0:
+            right = i
+        else:
+            break
+
+    # верхняя граница обрезки
+    up = 0
+    for j in range(y):
+        if max(max(pixels[i, j][:3]) for i in range(x)) == 0:
+            up += 1
+        else:
+            break
+
+    # нижняя граница обрезки
+    down = 0
+    for j in range(y - 1, -1, -1):
+        if max(max(pixels[i, j][:3]) for i in range(x)) == 0:
+            down = j
+        else:
+            break
+
+    im.crop((left, up, right, down)).save(file_name)  # перезаписываем старое изображение новым
+
+
 @bot.message_handler(content_types=['text'])
-def get_text_messages(message, massege=None):
-    global test_id, b2b_or_b2c, test_id, question_number, correct_option, test, result, level, num_questions
+def get_text_messages(message):
+    global test_id, b2b_or_b2c, test_id, question_number, correct_option, test, result, level
     sms2 = 'Вы можете выбрать один из 4 типов клиентов: '
     if message.text == "/start":
         test_id = 2
@@ -89,11 +133,19 @@ def get_text_messages(message, massege=None):
         bot.send_message(message.from_user.id, "Напишите /start")
         # mutex.release()
     elif message.text == "/show_statistic":
-        murkup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        webAppTest = types.WebAppInfo("https://anyashishkina.github.io/test_repository/")
-        murkup.add(types.InlineKeyboardButton('Посмотреть статистику', web_app=webAppTest))
+        for value in cursor.execute('SELECT * FROM users WHERE user_id=?', (message.from_user.id,)):
+            print(value[2], ' ', value[3])
+            if value[2] == 'manager':
+                murkup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+                webAppTest = types.WebAppInfo('https://anyashishkina.github.io/test_repository/')
+                murkup.add(types.InlineKeyboardButton('Заполните форму', web_app=webAppTest))
+                bot.send_message(message.from_user.id, 'Выберите тип клиента', reply_markup=murkup)
+        hti = Html2Image()
+        hti.screenshot(html_str=requests.get('http://127.0.0.1:8080/').text, save_as='statistic.png')
+        crop_background('statistic.png')
         # mutex.acquire()
-        bot.send_message(message.chat.id, 'Статистика!', reply_markup=murkup)
+        bot.send_photo(message.chat.id, photo=open('test.png', 'rb'),
+                       caption='Статистика')  # бот показывает картинку
         # mutex.release()
     elif message.text == "Привет":
         # mutex.acquire()
@@ -697,6 +749,35 @@ def read_ans(message):
             states[keyword].append('answering')
 
 
-if __name__ == '__main__':
+app = Flask(__name__)
+
+
+@app.route('/', methods=['GET'])
+def get_data():
+    results = {
+        "test1": 0, "test2": 1, "test3": 0,
+        "test4": 2, "test5": 3, "test6": 1,
+        "test7": 0, "test8": 3, "test9": 1,
+        "test10": 2, "test11": 3, "test12": 1,
+    }
+    matrix = [list(results.values())[i:i + 4] for i in range(0, len(results), 4)]
+    return render_template('statistics_page.html', matrix=matrix)
+
+
+def start_bot():
     set_main_menu()
     bot.polling(none_stop=True, interval=0)
+
+
+def start_app():
+    app.run(debug=False, port=8080)
+
+
+if __name__ == "__main__":
+    # создаем два потока
+    thread_bot = threading.Thread(target=start_bot)
+    thread_app = threading.Thread(target=start_app)
+
+    # запускаем их
+    thread_bot.start()
+    thread_app.start()
