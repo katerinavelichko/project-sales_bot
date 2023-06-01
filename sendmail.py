@@ -72,4 +72,3 @@ def send_email(to):
     msg["Subject"] = "Статистика подчиненных"
     server.sendmail(sender, to, msg.as_string())
     return "The message was sent successfully!"
-
