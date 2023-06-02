@@ -243,7 +243,7 @@ def get_text_messages(message):
         elif user_id_to_tests_options[message.chat.id][0]['b2b_or_b2c'] == 3:
             for value in cursor.execute("SELECT * FROM testbase WHERE question_number=? and test_id=?",
                                         (user_id_to_tests_options[message.chat.id][0]['question_number'],
-                                         test_boss_key)):
+                                         user_id_to_test_boss_key[message.chat.id][0])):
                 answers = [value[2], value[3], value[4], value[5]]
                 user_id_to_tests_options[message.chat.id][0]['correct_option'] = value[6] - 1
                 bot.send_poll(chat_id=message.chat.id, question=value[1], options=answers, type='quiz',
@@ -295,7 +295,7 @@ def handle_poll_answer(poll_answer):
     if user_id_to_tests_options[poll_answer.user.id][0]['correct_option'] == selected_option:
         user_id_to_tests_options[poll_answer.user.id][0]['result'] += 1
     if user_id_to_tests_options[poll_answer.user.id][0]['b2b_or_b2c'] == 3 and \
-            user_id_to_tests_options[poll_answer.user.id][0]['question_number'] == num_questions + 1:
+            user_id_to_tests_options[poll_answer.user.id][0]['question_number'] == user_id_to_num_questions[poll_answer.user.id][0]+ 1:
 
         # mutex.acquire()
         bot.send_message(poll_answer.user.id, 'Тест завершён.',
@@ -306,18 +306,18 @@ def handle_poll_answer(poll_answer):
 
         # mutex.acquire()
         result = user_id_to_tests_options[poll_answer.user.id][0]['result']
-        bot.send_message(poll_answer.user.id, f'Вы набрали {result} баллов из {num_questions}')
+        bot.send_message(poll_answer.user.id, f'Вы набрали {result} баллов из {user_id_to_num_questions[poll_answer.user.id][0]}')
         # mutex.release()
         queryy = cursor.execute('SElect * from  test_results  WHERE user_id=? AND  test_id=?',
-                                (user_id, test_boss_key)).fetchall()
+                                (user_id,user_id_to_test_boss_key[poll_answer.user.id][0])).fetchall()
         if len(queryy) > 0:
             cursor.execute('Update  test_results  SET num_of_right_answers=? WHERE user_id=? AND  test_id=?',
-                           (result, user_id, test_boss_key))
+                           (result, user_id,user_id_to_test_boss_key[poll_answer.user.id][0]))
             conn.commit()
         else:
             cursor.execute(
                 'INSERT Into test_results(user_id , test_id,  num_of_right_answers, num_of_questions) VALUES(?, ? ,? ,?)',
-                (user_id, test_boss_key, result, num_questions))
+                (user_id, user_id_to_test_boss_key[poll_answer.user.id][0], result, user_id_to_num_questions[poll_answer.user.id][0]))
             conn.commit()
         user_id_to_tests_options[poll_answer.user.id][0]['result'] = 0
     # if test_id == 4 and b2b_or_b2c == 0:
@@ -593,13 +593,13 @@ test_id_to_numbers = defaultdict(list)
 test_id_to_ans = defaultdict(list)
 states = defaultdict(list)
 cnt_to_user_id = defaultdict(list)
-
-
+user_id_to_test_boss_key = defaultdict(list)
+user_id_to_num_questions = defaultdict(list)
 @bot.message_handler()
 def ask_key_word_bosstest(message):
-    global test_boss_key
-    test_boss_key = message.text
-    test_boss_key = int(test_boss_key)
+    user_id_to_test_boss_key[message.chat.id].append(message.text)
+    # test_boss_key = message.text
+    user_id_to_test_boss_key[message.chat.id][0] = int(user_id_to_test_boss_key[message.chat.id][0])
     global user_id
     user_id = message.from_user.id
     # mutex.acquire()
@@ -610,14 +610,14 @@ def ask_key_word_bosstest(message):
 
 @bot.message_handler()
 def test_from_boss(message):
-    global test_boss_key
+    # global test_boss_key
     msgg = message.text
-    global num_questions
-    num_questions = cursor.execute('SELECT COUNT(*) FROM testbase WHERE test_id=?', (test_boss_key,)).fetchone()[0]
+    # global num_questions
+    user_id_to_num_questions[message.chat.id].append(cursor.execute('SELECT COUNT(*) FROM testbase WHERE test_id=?', (user_id_to_test_boss_key[message.chat.id][0],)).fetchone()[0])
     user_id_to_tests_options[message.chat.id][0]['question_number'] = 1
     user_id_to_tests_options[message.chat.id][0]['result'] = 0
     for value in cursor.execute("SELECT * FROM testbase WHERE question_number=? AND test_id=?",
-                                (user_id_to_tests_options[message.chat.id][0]['question_number'], test_boss_key,)):
+                                (user_id_to_tests_options[message.chat.id][0]['question_number'], user_id_to_test_boss_key[message.chat.id][0],)):
         answers = [value[2], value[3], value[4], value[5]]
         user_id_to_tests_options[message.chat.id][0]['correct_option'] = value[6] - 1
         bot.send_poll(chat_id=message.chat.id, question=value[1], options=answers, type='quiz',
