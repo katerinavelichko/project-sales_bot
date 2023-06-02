@@ -104,13 +104,6 @@ from collections import defaultdict
 
 user_id_to_tests_options = defaultdict(list)
 
-# test_id = 2
-b2b_or_b2c = 0
-test = 0
-question_number = 1
-correct_option = -1
-result = 0
-level = 0
 
 
 @bot.message_handler(content_types=['text'])
