@@ -11,8 +11,10 @@ import telebot
 bot = telebot.TeleBot('5844570225:AAHVbCClhE53DdtM-RpZ1vKjrPPB4j_I538', 'markdown')
 
 from collections import defaultdict
+
 boss_id_to_email = defaultdict(list)
 boss_id_to_workers = defaultdict(list)
+
 
 @bot.message_handler()
 def ask_boss(message):
@@ -47,6 +49,7 @@ def mas_to_string(mas):
             i['num_of_questions']) + ' в тесте с id ' + str(i['id_of_test']) + ' '
         new_mas.append(s)
     return new_mas
+
 
 def send_email(boss_id, to):
     sender = "sales.botik@gmail.com"

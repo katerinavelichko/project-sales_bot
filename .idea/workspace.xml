@@ -4,7 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="2f028b91-fee2-488b-b4f2-1dbcbc437b28" name="Changes" comment="debug sendmail2" />
+    <list default="true" id="2f028b91-fee2-488b-b4f2-1dbcbc437b28" name="Changes" comment="debug sendmail2">
+      <change beforePath="$PROJECT_DIR$/sendmail.py" beforeDir="false" afterPath="$PROJECT_DIR$/sendmail.py" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -35,11 +37,15 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "WebServerToolWindowFactoryState": "false",
+    "node.js.detected.package.eslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/templates" />
@@ -98,6 +104,7 @@
       <workItem from="1684928341728" duration="4000" />
       <workItem from="1684930925818" duration="631000" />
       <workItem from="1684932445419" duration="472000" />
+      <workItem from="1685707945594" duration="401000" />
     </task>
     <task id="LOCAL-00001" summary="add file">
       <created>1679316945896</created>
@@ -141,7 +148,14 @@
       <option name="project" value="LOCAL" />
       <updated>1685707920899</updated>
     </task>
-    <option name="localTasksCounter" value="7" />
+    <task id="LOCAL-00007" summary="debug sendmail2">
+      <created>1685707988482</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1685707988482</updated>
+    </task>
+    <option name="localTasksCounter" value="8" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
