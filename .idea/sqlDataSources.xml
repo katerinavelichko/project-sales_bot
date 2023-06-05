@@ -4,5 +4,8 @@
     <mapping uuid="a3791504-f566-4f8c-aff1-18777fef41c8" name="server.db Mapping">
       <data-sources db="353089dd-3f53-4787-9e61-6283dce8350e" />
     </mapping>
+    <mapping uuid="5e092dde-cb94-49eb-b07c-b6d42bde4dcd" name="identifier.sqlite [3] Mapping">
+      <data-sources db="ebbf154a-2b33-45dc-a4fd-db10f66d4776" />
+    </mapping>
   </component>
 </project>

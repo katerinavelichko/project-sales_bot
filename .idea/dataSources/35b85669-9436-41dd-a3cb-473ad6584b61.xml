@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <dataSource name="users.db">
   <database-model serializer="dbm" dbms="SQLITE" family-id="SQLITE" format-version="4.45">
-    <root id="1">
-      <ServerVersion>3.40.1</ServerVersion>
-    </root>
+    <root id="1"/>
     <collation id="2" parent="1" name="BINARY"/>
     <collation id="3" parent="1" name="NOCASE"/>
     <collation id="4" parent="1" name="RTRIM"/>
@@ -1423,116 +1421,76 @@
     <argument id="503" parent="172">
       <Position>1</Position>
     </argument>
-    <table id="504" parent="173" name="boss_to_users"/>
-    <table id="505" parent="173" name="sqlite_master">
+    <table id="504" parent="173" name="sqlite_master">
       <System>1</System>
     </table>
-    <table id="506" parent="173" name="test_results"/>
-    <table id="507" parent="173" name="testbase"/>
-    <table id="508" parent="173" name="users"/>
-    <column id="509" parent="504" name="user_id">
-      <DasType>INT|0s</DasType>
-      <Position>1</Position>
-    </column>
-    <column id="510" parent="504" name="user_status">
-      <DasType>VARCHAR(100)|0s</DasType>
-      <Position>2</Position>
-    </column>
-    <column id="511" parent="504" name="user_boss">
-      <DasType>int|0s</DasType>
-      <Position>3</Position>
-    </column>
-    <foreign-key id="512" parent="504">
-      <ColNames>user_id</ColNames>
-      <RefColNames>user_id</RefColNames>
-      <RefTableName>users</RefTableName>
-    </foreign-key>
-    <foreign-key id="513" parent="504">
-      <ColNames>user_status</ColNames>
-      <RefColNames>user_status</RefColNames>
-      <RefTableName>users</RefTableName>
-    </foreign-key>
-    <column id="514" parent="505" name="type">
+    <table id="505" parent="173" name="testbase"/>
+    <table id="506" parent="173" name="users"/>
+    <column id="507" parent="504" name="type">
       <DasType>TEXT|0s</DasType>
       <Position>1</Position>
     </column>
-    <column id="515" parent="505" name="name">
+    <column id="508" parent="504" name="name">
       <DasType>TEXT|0s</DasType>
       <Position>2</Position>
     </column>
-    <column id="516" parent="505" name="tbl_name">
+    <column id="509" parent="504" name="tbl_name">
       <DasType>TEXT|0s</DasType>
       <Position>3</Position>
     </column>
-    <column id="517" parent="505" name="rootpage">
+    <column id="510" parent="504" name="rootpage">
       <DasType>INT|0s</DasType>
       <Position>4</Position>
     </column>
-    <column id="518" parent="505" name="sql">
+    <column id="511" parent="504" name="sql">
       <DasType>TEXT|0s</DasType>
       <Position>5</Position>
     </column>
-    <column id="519" parent="506" name="user_id">
-      <DasType>INT|0s</DasType>
-      <Position>1</Position>
-    </column>
-    <column id="520" parent="506" name="test_id">
-      <DasType>INT|0s</DasType>
-      <Position>2</Position>
-    </column>
-    <column id="521" parent="506" name="num_of_right_answers">
-      <DasType>int|0s</DasType>
-      <Position>3</Position>
-    </column>
-    <column id="522" parent="506" name="num_of_questions">
-      <DasType>int|0s</DasType>
-      <Position>4</Position>
-    </column>
-    <column id="523" parent="507" name="question_number">
+    <column id="512" parent="505" name="question_number">
       <DasType>int|0s</DasType>
       <Position>1</Position>
     </column>
-    <column id="524" parent="507" name="question">
+    <column id="513" parent="505" name="question">
       <DasType>text(300)|0s</DasType>
       <Position>2</Position>
     </column>
-    <column id="525" parent="507" name="ans_1">
+    <column id="514" parent="505" name="ans_1">
       <DasType>text(300)|0s</DasType>
       <Position>3</Position>
     </column>
-    <column id="526" parent="507" name="ans_2">
+    <column id="515" parent="505" name="ans_2">
       <DasType>text(300)|0s</DasType>
       <Position>4</Position>
     </column>
-    <column id="527" parent="507" name="ans_3">
+    <column id="516" parent="505" name="ans_3">
       <DasType>text(300)|0s</DasType>
       <Position>5</Position>
     </column>
-    <column id="528" parent="507" name="ans_4">
+    <column id="517" parent="505" name="ans_4">
       <DasType>text(300)|0s</DasType>
       <Position>6</Position>
     </column>
-    <column id="529" parent="507" name="right_ans">
+    <column id="518" parent="505" name="right_ans">
       <DasType>int|0s</DasType>
       <Position>7</Position>
     </column>
-    <column id="530" parent="507" name="test_id">
+    <column id="519" parent="505" name="test_id">
       <DasType>int|0s</DasType>
       <Position>8</Position>
     </column>
-    <column id="531" parent="508" name="user_id">
+    <column id="520" parent="506" name="user_id">
       <DasType>int|0s</DasType>
       <Position>1</Position>
     </column>
-    <column id="532" parent="508" name="user_name">
+    <column id="521" parent="506" name="user_name">
       <DasType>varchar(150)|0s</DasType>
       <Position>2</Position>
     </column>
-    <column id="533" parent="508" name="user_status">
+    <column id="522" parent="506" name="user_status">
       <DasType>varchar(150)|0s</DasType>
       <Position>3</Position>
     </column>
-    <column id="534" parent="508" name="username">
+    <column id="523" parent="506" name="username">
       <DasType>varchar(150)|0s</DasType>
       <Position>4</Position>
     </column>

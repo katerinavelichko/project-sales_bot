@@ -58,6 +58,11 @@ def db_table_val2(user_id: int, user_status: str, user_boss: str):
                    (user_id, user_status, user_boss))
     conn.commit()
 
+def db_table_val3(user_id: int, user_name: str, first_name: str, second_name: str, user_status: str, test_password: int, correct_answers: int, boss_id: int):
+    cur.execute('INSERT INTO statistics(user_id, user_name, first_name, second_name, user_status, test_password, correct_answers, boss_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                   (user_id, user_name, first_name, second_name, user_status, test_password, correct_answers, boss_id))
+    con.commit()
+
 
 # эта функция обрезает чёрный фон вокруг картинки со статистикой
 def crop_background(file_name):
@@ -389,6 +394,9 @@ def handle_poll_answer(poll_answer):
         user_id_to_tests_options[poll_answer.user.id][0]['result'] = 0
     elif user_id_to_tests_options[poll_answer.user.id][0]['question_number'] == 4 and \
             user_id_to_tests_options[poll_answer.user.id][0]['b2b_or_b2c'] == 2:
+        cur.execute('UPDATE statistics SET correct_answers=? WHERE test_password=? AND user_id=?',
+                    (user_id_to_tests_options[poll_answer.user.id][0]['result'], user_id_to_tests_options[poll_answer.user.id][0]['test'], poll_answer.user.id))
+        con.commit()
         user_id_to_tests_options[poll_answer.user.id][0]['b2b_or_b2c'] = 2
 
         # mutex.acquire()
@@ -420,7 +428,15 @@ def web_app(message: types.Message):
 def callback_worker(call):
     if call.data == "manager" or "boss":
         if call.data == "manager":
-
+            cnt_of_users_in_table = 0
+            for value in cur.execute("SELECT * FROM statistics WHERE user_status = ?", ('manager',)):
+                if call.from_user.username == value[1]:
+                    cnt_of_users_in_table += 1
+            if cnt_of_users_in_table == 0:
+                db_table_val3(user_id=call.from_user.id, user_name=call.from_user.username,
+                              first_name=call.from_user.first_name, second_name=call.from_user.last_name,
+                              user_status='manager', test_password=0,
+                              correct_answers=0, boss_id=0)
             # mutex.acquire()
             bot.send_message(call.from_user.id, "Вам предстоит выбрать тип продаж. ")
             # mutex.release()
@@ -548,6 +564,15 @@ def callback_worker(call):
         # mutex.release()
     if user_id_to_tests_options[call.message.chat.id][0]['test'] in [2121, 2122, 2123, 2111, 2112, 2113, 2131, 2132,
                                                                      2133, 2141, 2142, 2143]:
+        cnt_of_passed_test = 0
+        for value in cur.execute("SELECT * FROM statistics"):
+            if call.from_user.username == value[1] and user_id_to_tests_options[call.message.chat.id][0]['test'] == value[5]:
+                cnt_of_passed_test += 1
+        if cnt_of_passed_test == 0:
+            db_table_val3(user_id=call.from_user.id, user_name=call.from_user.username,
+                          first_name=call.from_user.first_name, second_name=call.from_user.last_name,
+                          user_status='manager', test_password=user_id_to_tests_options[call.message.chat.id][0]['test'],
+                          correct_answers=0, boss_id=0)
         for value in cur.execute("SELECT * FROM main_tests WHERE test_password=? AND question_number=?",
                                  (user_id_to_tests_options[call.message.chat.id][0]['test'],
                                   user_id_to_tests_options[call.message.chat.id][0]['question_number'],)):
