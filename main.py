@@ -59,15 +59,6 @@ def db_table_val2(user_id: int, user_status: str, user_boss: str):
     conn.commit()
 
 
-test_id = 2
-b2b_or_b2c = 0
-test = 0
-question_number = 1
-correct_option = -1
-result = 0
-level = 0
-
-
 # эта функция обрезает чёрный фон вокруг картинки со статистикой
 def crop_background(file_name):
     im = Image.open(file_name)
@@ -109,17 +100,20 @@ def crop_background(file_name):
     im.crop((left, up, right, down)).save(file_name)  # перезаписываем старое изображение новым
 
 
+from collections import defaultdict
+
+user_id_to_tests_options = defaultdict(list)
+
+
+
 @bot.message_handler(content_types=['text'])
 def get_text_messages(message):
-    global test_id, b2b_or_b2c, test_id, question_number, correct_option, test, result, level
     sms2 = 'Вы можете выбрать один из 4 типов клиентов: '
     if message.text == "/start":
-        test_id = 2
-        b2b_or_b2c = 0
-        test = 0
-        question_number = 1
-        correct_option = -1
-        result = 0
+        user_id = message.from_user.id
+        user_id_to_tests_options[user_id].append(
+            {'test_id': 2, 'b2b_or_b2c': 0, 'test': 0, 'question_number': 1, 'correct_option': -1, 'result': 0,
+             'level': 0})
         keyboard = types.InlineKeyboardMarkup()
         key_manager = types.InlineKeyboardButton(text='Менеджер', callback_data="manager")
         keyboard.add(key_manager)
@@ -164,15 +158,16 @@ def get_text_messages(message):
         # mutex.release()
         bot.register_next_step_handler(send, ask_key_word)
     elif message.text == '/choosetestb2b':
-        if str(test)[0] == "2":
+        if str(user_id_to_tests_options[message.chat.id][0]['test'])[0] == "2":
             # mutex.acquire()
             bot.send_message(message.chat.id,
                              'Вы проходили входной тест для B2C, поэтому можете выбрать тест только из этой категории. Нажмите "Выбрать тест b2c"')
             # mutex.release()
         else:
-            test = 1000
-            test += level
-            question_number = 1
+            user_id_to_tests_options[message.chat.id][0]['test'] = 1000
+            user_id_to_tests_options[message.chat.id][0]['test'] += user_id_to_tests_options[message.chat.id][0][
+                'level']
+            user_id_to_tests_options[message.chat.id][0]['question_number'] = 1
             keyboard = types.InlineKeyboardMarkup()
             key_loyal = types.InlineKeyboardButton(text='Лояльный', callback_data='loyal_client')
             key_new = types.InlineKeyboardButton(text='Новый', callback_data='new_client')
@@ -186,15 +181,16 @@ def get_text_messages(message):
             bot.send_message(message.from_user.id, 'Выберите тип клиента', reply_markup=keyboard)
             # mutex.release()
     elif message.text == '/choosetestb2c':
-        if str(test)[0] == "1":
+        if str(user_id_to_tests_options[message.chat.id][0]['test'])[0] == "1":
             # mutex.acquire()
             bot.send_message(message.chat.id,
                              'Вы проходили входной тест для B2B, поэтому можете выбрать тест только из этой категории. Нажмите "Выбрать тест b2b"')
             # mutex.release()
         else:
-            test = 2000
-            test += level
-            question_number = 1
+            user_id_to_tests_options[message.chat.id][0]['test'] = 2000
+            user_id_to_tests_options[message.chat.id][0]['test'] += user_id_to_tests_options[message.chat.id][0][
+                'level']
+            user_id_to_tests_options[message.chat.id][0]['question_number'] = 1
             keyboard = types.InlineKeyboardMarkup()
             key_loyal = types.InlineKeyboardButton(text='Лояльный', callback_data='loyal_client')
             key_new = types.InlineKeyboardButton(text='Новый', callback_data='new_client')
@@ -208,15 +204,17 @@ def get_text_messages(message):
             bot.send_message(message.from_user.id, 'Выберите тип клиента', reply_markup=keyboard)
             # mutex.release()
     elif message.text == "Следующий вопрос":
-        if b2b_or_b2c == 1:
-            for value in cur.execute("SELECT * FROM entrance_test_b2b WHERE id=?", (test_id,)):
+        user_id = message.from_user.id
+        if user_id_to_tests_options[message.chat.id][0]['b2b_or_b2c'] == 1:
+            for value in cur.execute("SELECT * FROM entrance_test_b2b WHERE id=?",
+                                     (user_id_to_tests_options[user_id][0]['test_id'],)):
                 answers = [value[2], value[3], value[4]]
-                correct_option = value[5]
+                user_id_to_tests_options[message.chat.id][0]['correct_option'] = value[5]
                 bot.send_poll(chat_id=message.chat.id, question=value[1], options=answers, type='quiz',
                               correct_option_id=value[5], open_period=30, is_anonymous=False)
-                test_id += 1
-                if test_id == 4:
-                    # if test_id == 29:
+                user_id_to_tests_options[message.chat.id][0]['test_id'] += 1
+                # if test_id == 4:
+                if user_id_to_tests_options[message.chat.id][0]['test_id'] == 29:
                     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
                     button_next_question = types.KeyboardButton('Выбрать тест')
                     markup.row(button_next_question)
@@ -224,15 +222,16 @@ def get_text_messages(message):
                     bot.send_message(message.from_user.id, 'Нажмите кнопку "Выбрать тест", когда будете готовы.',
                                      reply_markup=markup)
                     # mutex.release()
-        elif b2b_or_b2c == 0:
-            for value in cur.execute("SELECT * FROM entrance_test_b2c WHERE id=?", (test_id,)):
+        elif user_id_to_tests_options[message.chat.id][0]['b2b_or_b2c'] == 0:
+            for value in cur.execute("SELECT * FROM entrance_test_b2c WHERE id=?",
+                                     (user_id_to_tests_options[message.chat.id][0]['test_id'],)):
                 answers = [value[2], value[3], value[4]]
-                correct_option = value[5]
+                user_id_to_tests_options[message.chat.id][0]['correct_option'] = value[5]
                 bot.send_poll(chat_id=message.chat.id, question=value[1], options=answers, type='quiz',
                               correct_option_id=value[5], open_period=30, is_anonymous=False)
-                test_id += 1
-                if test_id == 4:
-                    # if test_id == 25:
+                user_id_to_tests_options[message.chat.id][0]['test_id'] += 1
+                # if user_id_to_tests_options[message.chat.id][0]['test_id'] == 4:
+                if user_id_to_tests_options[message.chat.id][0]['test_id'] == 25:
                     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
                     button_next_question = types.KeyboardButton('Выбрать тест')
                     markup.row(button_next_question)
@@ -241,23 +240,25 @@ def get_text_messages(message):
                     bot.send_message(message.from_user.id, 'Нажмите кнопку "Выбрать тест", когда будете готовы.',
                                      reply_markup=markup)
                     # mutex.release()
-        elif b2b_or_b2c == 3:
+        elif user_id_to_tests_options[message.chat.id][0]['b2b_or_b2c'] == 3:
             for value in cursor.execute("SELECT * FROM testbase WHERE question_number=? and test_id=?",
-                                        (question_number, test_boss_key)):
+                                        (user_id_to_tests_options[message.chat.id][0]['question_number'],
+                                         user_id_to_test_boss_key[message.chat.id][0])):
                 answers = [value[2], value[3], value[4], value[5]]
-                correct_option = value[6] - 1
+                user_id_to_tests_options[message.chat.id][0]['correct_option'] = value[6] - 1
                 bot.send_poll(chat_id=message.chat.id, question=value[1], options=answers, type='quiz',
                               correct_option_id=value[6] - 1, open_period=30, is_anonymous=False)
-                question_number += 1
+                user_id_to_tests_options[message.chat.id][0]['question_number'] += 1
         else:
             for value in cur.execute("SELECT * FROM main_tests WHERE test_password=? AND question_number=?",
-                                     (test, question_number,)):
+                                     (user_id_to_tests_options[message.chat.id][0]['test'],
+                                      user_id_to_tests_options[message.chat.id][0]['question_number'],)):
                 answers = [value[3], value[4], value[5]]
-                correct_option = value[6]
+                user_id_to_tests_options[message.chat.id][0]['correct_option'] = value[6]
                 bot.send_poll(chat_id=message.chat.id, question=value[2], options=answers, type='quiz',
                               correct_option_id=value[6], open_period=30, is_anonymous=False)
-                question_number += 1
-            if question_number == 4:
+                user_id_to_tests_options[message.chat.id][0]['question_number'] += 1
+            if user_id_to_tests_options[message.chat.id][0]['question_number'] == 4:
                 # mutex.acquire()
                 bot.send_message(message.from_user.id, 'Тест завершён.',
                                  reply_markup=types.ReplyKeyboardRemove())
@@ -289,105 +290,112 @@ def get_text_messages(message):
 
 @bot.poll_answer_handler()
 def handle_poll_answer(poll_answer):
-    global result, correct_option, test_id, b2b_or_b2c, test, level, question_number
+    global result
     selected_option = poll_answer.option_ids[0]
-    if correct_option == selected_option:
-        result += 1
-    if b2b_or_b2c == 3 and question_number == num_questions + 1:
+    if user_id_to_tests_options[poll_answer.user.id][0]['correct_option'] == selected_option:
+        user_id_to_tests_options[poll_answer.user.id][0]['result'] += 1
+    if user_id_to_tests_options[poll_answer.user.id][0]['b2b_or_b2c'] == 3 and \
+            user_id_to_tests_options[poll_answer.user.id][0]['question_number'] == user_id_to_num_questions[poll_answer.user.id][0]+ 1:
 
         # mutex.acquire()
         bot.send_message(poll_answer.user.id, 'Тест завершён.',
                          reply_markup=types.ReplyKeyboardRemove())
         # mutex.release()
-        question_number = 0
-        b2b_or_b2c = 5
+        user_id_to_tests_options[poll_answer.user.id][0]['question_number'] = 0
+        user_id_to_tests_options[poll_answer.user.id][0]['b2b_or_b2c'] = 5
 
         # mutex.acquire()
-        bot.send_message(poll_answer.user.id, f'Вы набрали {result} баллов из {num_questions}')
+        result = user_id_to_tests_options[poll_answer.user.id][0]['result']
+        bot.send_message(poll_answer.user.id, f'Вы набрали {result} баллов из {user_id_to_num_questions[poll_answer.user.id][0]}')
         # mutex.release()
         queryy = cursor.execute('SElect * from  test_results  WHERE user_id=? AND  test_id=?',
-                                (user_id, test_boss_key)).fetchall()
+                                (user_id,user_id_to_test_boss_key[poll_answer.user.id][0])).fetchall()
         if len(queryy) > 0:
             cursor.execute('Update  test_results  SET num_of_right_answers=? WHERE user_id=? AND  test_id=?',
-                           (result, user_id, test_boss_key))
+                           (result, user_id,user_id_to_test_boss_key[poll_answer.user.id][0]))
             conn.commit()
         else:
             cursor.execute(
                 'INSERT Into test_results(user_id , test_id,  num_of_right_answers, num_of_questions) VALUES(?, ? ,? ,?)',
-                (user_id, test_boss_key, result, num_questions))
+                (user_id, user_id_to_test_boss_key[poll_answer.user.id][0], result, user_id_to_num_questions[poll_answer.user.id][0]))
             conn.commit()
-        result = 0
-    if test_id == 4 and b2b_or_b2c == 0:
-        # if test_id == 25 and b2b_or_b2c == 0:
-        b2b_or_b2c = 2
+        user_id_to_tests_options[poll_answer.user.id][0]['result'] = 0
+    # if test_id == 4 and b2b_or_b2c == 0:
+    if user_id_to_tests_options[poll_answer.user.id][0]['test_id'] == 25 and \
+            user_id_to_tests_options[poll_answer.user.id][0]['b2b_or_b2c'] == 0:
+        user_id_to_tests_options[poll_answer.user.id][0]['b2b_or_b2c'] = 2
 
         # mutex.acquire()
+        result = user_id_to_tests_options[poll_answer.user.id][0]['result']
         bot.send_message(poll_answer.user.id, f'Вы набрали {result} баллов из 25')
         # mutex.release()
-        if 25 >= result >= 23:
-            test += 300
-            level += 300
+        if 25 >= user_id_to_tests_options[poll_answer.user.id][0]['result'] >= 23:
+            user_id_to_tests_options[poll_answer.user.id][0]['test'] += 300
+            user_id_to_tests_options[poll_answer.user.id][0]['level'] += 300
 
             # mutex.acquire()
             bot.send_message(poll_answer.user.id,
                              'На данный момент ваш уровень - эксперт. Вам будут предложены тесты из этой категории')
             # mutex.release()
-        elif 22 >= result >= 20:
-            test += 200
-            level += 200
+        elif 22 >= user_id_to_tests_options[poll_answer.user.id][0]['result'] >= 20:
+            user_id_to_tests_options[poll_answer.user.id][0]['test'] += 200
+            user_id_to_tests_options[poll_answer.user.id][0]['level'] += 200
 
             # mutex.acquire()
             bot.send_message(poll_answer.user.id,
                              'На данный момент ваш уровень - продвинутый. Вам будут предложены тесты из этой категории')
             # mutex.release()
-        elif result <= 19:
-            test += 100
-            level += 100
+        elif user_id_to_tests_options[poll_answer.user.id][0]['result'] <= 19:
+            user_id_to_tests_options[poll_answer.user.id][0]['test'] += 100
+            user_id_to_tests_options[poll_answer.user.id][0]['level'] += 100
 
             # mutex.acquire()
             bot.send_message(poll_answer.user.id,
                              'На данный момент ваш уровень - новичок. Вам будут предложены тесты из этой категории')
             # mutex.release()
-        result = 0
-    elif test_id == 4 and b2b_or_b2c == 1:
-        # elif test_id == 29 and b2b_or_b2c == 1:
-        b2b_or_b2c = 2
-
+        user_id_to_tests_options[poll_answer.user.id][0]['result'] = 0
+    # elif test_id == 4 and b2b_or_b2c == 1:
+    elif user_id_to_tests_options[poll_answer.user.id][0]['test_id'] == 29 and \
+            user_id_to_tests_options[poll_answer.user.id][0]['b2b_or_b2c'] == 1:
+        user_id_to_tests_options[poll_answer.user.id][0]['b2b_or_b2c'] = 2
         # mutex.acquire()
+        result = user_id_to_tests_options[poll_answer.user.id][0]['result']
         bot.send_message(poll_answer.user.id, f'Вы набрали {result} баллов из 29')
         # mutex.release()
-        if 25 >= result >= 23:
-            test += 300
-            level += 300
+        if 25 >= user_id_to_tests_options[poll_answer.user.id][0]['result'] >= 23:
+            user_id_to_tests_options[poll_answer.user.id][0]['test'] += 300
+            user_id_to_tests_options[poll_answer.user.id][0]['level'] += 300
 
             # mutex.acquire()
             bot.send_message(poll_answer.user.id,
                              'На данный момент ваш уровень - эксперт. Вам будут предложены тесты из этой категории')
             # mutex.release()
-        elif 22 >= result >= 20:
-            test += 200
-            level += 200
+        elif 22 >= user_id_to_tests_options[poll_answer.user.id][0]['result'] >= 20:
+            user_id_to_tests_options[poll_answer.user.id][0]['test'] += 200
+            user_id_to_tests_options[poll_answer.user.id][0]['level'] += 200
 
             # mutex.acquire()
             bot.send_message(poll_answer.user.id,
                              'На данный момент ваш уровень - продвинутый. Вам будут предложены тесты из этой категории')
             # mutex.release()
-        elif result <= 19:
-            test += 100
-            level += 100
+        elif user_id_to_tests_options[poll_answer.user.id][0]['result'] <= 19:
+            user_id_to_tests_options[poll_answer.user.id][0]['test'] += 100
+            user_id_to_tests_options[poll_answer.user.id][0]['level'] += 100
 
             # mutex.acquire()
             bot.send_message(poll_answer.user.id,
                              'На данный момент ваш уровень - новичок. Вам будут предложены тесты из этой категории')
             # mutex.release()
-        result = 0
-    elif question_number == 4 and b2b_or_b2c == 2:
-        b2b_or_b2c = 2
+        user_id_to_tests_options[poll_answer.user.id][0]['result'] = 0
+    elif user_id_to_tests_options[poll_answer.user.id][0]['question_number'] == 4 and \
+            user_id_to_tests_options[poll_answer.user.id][0]['b2b_or_b2c'] == 2:
+        user_id_to_tests_options[poll_answer.user.id][0]['b2b_or_b2c'] = 2
 
         # mutex.acquire()
+        result = user_id_to_tests_options[poll_answer.user.id][0]['result']
         bot.send_message(poll_answer.user.id, f'Вы набрали {result} баллов из 3')
         # mutex.release()
-        result = 0
+        user_id_to_tests_options[poll_answer.user.id][0]['result'] = 0
 
 
 @bot.message_handler(content_types=['web_app_data'])
@@ -410,8 +418,6 @@ def web_app(message: types.Message):
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_worker(call):
-    global b2b_or_b2c, test, question_number, correct_option, test_id
-    global test_boss_key
     if call.data == "manager" or "boss":
         if call.data == "manager":
 
@@ -455,7 +461,6 @@ def callback_worker(call):
             db_table_val1(user_id=us_id, user_name=us_name, user_status=status, username=username)
             if status == 'manager':
                 db_table_val2(user_id=us_id, user_status=status, user_boss=0)
-
                 # mutex.acquire()
                 send = bot.send_message(call.message.chat.id, 'Введите id вашего руководителя')
                 # mutex.release()
@@ -464,8 +469,8 @@ def callback_worker(call):
     if call.data == "typeofclientb" or call.data == "typeofclientc":
         if call.data == "typeofclientb" or call.data == "typeofclientc":
             if call.data == "typeofclientb":
-                test += 1000
-                b2b_or_b2c = 1
+                user_id_to_tests_options[call.message.chat.id][0]['test'] += 1000
+                user_id_to_tests_options[call.message.chat.id][0]['b2b_or_b2c'] = 1
                 sms1 = 'Отлично! Вы выбрали продажи компании/магазину. Пожалуйста пройдите тест для определения уровня.'
 
                 # mutex.acquire()
@@ -473,10 +478,10 @@ def callback_worker(call):
                 # mutex.release()
                 for value in cur.execute("SELECT * FROM entrance_test_b2b"):
                     answers = [value[2], value[3], value[4]]
-                    correct_option = value[5]
+                    user_id_to_tests_options[call.message.chat.id][0]['correct_option'] = value[5]
                     bot.send_poll(chat_id=call.message.chat.id, question=value[1], options=answers, type='quiz',
                                   correct_option_id=value[5], open_period=30, is_anonymous=False)
-                    test_id += 1
+                    user_id_to_tests_options[call.from_user.id][0]['test_id'] += 1
                     break
                 markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
                 button_next_question = types.KeyboardButton('Следующий вопрос')
@@ -488,7 +493,7 @@ def callback_worker(call):
                                  reply_markup=markup)
                 # mutex.release()
             else:
-                test += 2000
+                user_id_to_tests_options[call.message.chat.id][0]['test'] += 2000
                 sms1 = 'Отлично! Вы выбрали продажи частному лицу. Пожалуйста пройдите тест для определения уровня.'
 
                 # mutex.acquire()
@@ -496,10 +501,10 @@ def callback_worker(call):
                 # mutex.release()
                 for value in cur.execute("SELECT * FROM entrance_test_b2c"):
                     answers = [value[2], value[3], value[4]]
-                    correct_option = value[5]
+                    user_id_to_tests_options[call.from_user.id][0]['correct_option'] = value[5]
                     bot.send_poll(chat_id=call.message.chat.id, question=value[1], options=answers, type='quiz',
                                   correct_option_id=value[5], open_period=30, is_anonymous=False)
-                    test_id += 1
+                    user_id_to_tests_options[call.from_user.id][0]['test_id'] += 1
                     break
                 markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
                 button_next_question = types.KeyboardButton('Следующий вопрос')
@@ -512,13 +517,13 @@ def callback_worker(call):
                 # mutex.release()
     elif call.data == 'loyal_client' or call.data == 'new_client' or call.data == 'negative_client' or call.data == 'doubting_client':
         if call.data == 'loyal_client':
-            test += 10
+            user_id_to_tests_options[call.message.chat.id][0]['test'] += 10
         elif call.data == 'new_client':
-            test += 20
+            user_id_to_tests_options[call.message.chat.id][0]['test'] += 20
         elif call.data == 'negative_client':
-            test += 30
+            user_id_to_tests_options[call.message.chat.id][0]['test'] += 30
         elif call.data == 'doubting_client':
-            test += 40
+            user_id_to_tests_options[call.message.chat.id][0]['test'] += 40
         sms3 = 'Давайте выберем форму коммуникации'
         keyboard = types.InlineKeyboardMarkup()
         key_phone = types.InlineKeyboardButton(text='Телефон', callback_data='phone_communication')
@@ -532,23 +537,25 @@ def callback_worker(call):
         # mutex.release()
     elif call.data == 'phone_communication' or call.data == 'meet_communication' or call.data == 'message_communication':
         if call.data == 'phone_communication':
-            test += 1
+            user_id_to_tests_options[call.message.chat.id][0]['test'] += 1
         elif call.data == 'meet_communication':
-            test += 2
+            user_id_to_tests_options[call.message.chat.id][0]['test'] += 2
         elif call.data == 'message_communication':
-            test += 3
+            user_id_to_tests_options[call.message.chat.id][0]['test'] += 3
         sms5 = 'Поздравляю! Вы готовы проходить тест. Он будет сгенерирован нашей системой.'
         # mutex.acquire()
         bot.send_message(call.message.chat.id, sms5)
         # mutex.release()
-    if test in [2121, 2122, 2123, 2111, 2112, 2113, 2131, 2132, 2133, 2141, 2142, 2143]:
+    if user_id_to_tests_options[call.message.chat.id][0]['test'] in [2121, 2122, 2123, 2111, 2112, 2113, 2131, 2132,
+                                                                     2133, 2141, 2142, 2143]:
         for value in cur.execute("SELECT * FROM main_tests WHERE test_password=? AND question_number=?",
-                                 (test, question_number,)):
+                                 (user_id_to_tests_options[call.message.chat.id][0]['test'],
+                                  user_id_to_tests_options[call.message.chat.id][0]['question_number'],)):
             answers = [value[3], value[4], value[5]]
-            correct_option = value[6]
+            user_id_to_tests_options[call.message.chat.id][0]['correct_option'] = value[6]
             bot.send_poll(chat_id=call.message.chat.id, question=value[2], options=answers, type='quiz',
                           correct_option_id=value[6], open_period=30, is_anonymous=False)
-            question_number += 1
+            user_id_to_tests_options[call.message.chat.id][0]['question_number'] += 1
             break
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
         button_next_question = types.KeyboardButton('Следующий вопрос')
@@ -559,7 +566,7 @@ def callback_worker(call):
                          reply_markup=markup)
         # mutex.release()
     if call.data == "bosstest":
-        b2b_or_b2c = 3
+        user_id_to_tests_options[call.message.chat.id][0]['b2b_or_b2c'] = 3
         # mutex.acquire()
         msg = bot.send_message(call.message.chat.id, 'введите пароль от теста')
         # mutex.release()
@@ -586,13 +593,13 @@ test_id_to_numbers = defaultdict(list)
 test_id_to_ans = defaultdict(list)
 states = defaultdict(list)
 cnt_to_user_id = defaultdict(list)
-
-
+user_id_to_test_boss_key = defaultdict(list)
+user_id_to_num_questions = defaultdict(list)
 @bot.message_handler()
 def ask_key_word_bosstest(message):
-    global test_boss_key
-    test_boss_key = message.text
-    test_boss_key = int(test_boss_key)
+    user_id_to_test_boss_key[message.chat.id].append(message.text)
+    # test_boss_key = message.text
+    user_id_to_test_boss_key[message.chat.id][0] = int(user_id_to_test_boss_key[message.chat.id][0])
     global user_id
     user_id = message.from_user.id
     # mutex.acquire()
@@ -603,19 +610,19 @@ def ask_key_word_bosstest(message):
 
 @bot.message_handler()
 def test_from_boss(message):
-    global b2b_or_b2c, test, question_number, correct_option, test_id, result, test_boss_key
+    # global test_boss_key
     msgg = message.text
-    global num_questions
-    num_questions = cursor.execute('SELECT COUNT(*) FROM testbase WHERE test_id=?', (test_boss_key,)).fetchone()[0]
-    question_number = 1
-    result = 0
+    # global num_questions
+    user_id_to_num_questions[message.chat.id].append(cursor.execute('SELECT COUNT(*) FROM testbase WHERE test_id=?', (user_id_to_test_boss_key[message.chat.id][0],)).fetchone()[0])
+    user_id_to_tests_options[message.chat.id][0]['question_number'] = 1
+    user_id_to_tests_options[message.chat.id][0]['result'] = 0
     for value in cursor.execute("SELECT * FROM testbase WHERE question_number=? AND test_id=?",
-                                (question_number, test_boss_key,)):
+                                (user_id_to_tests_options[message.chat.id][0]['question_number'], user_id_to_test_boss_key[message.chat.id][0],)):
         answers = [value[2], value[3], value[4], value[5]]
-        correct_option = value[6] - 1
+        user_id_to_tests_options[message.chat.id][0]['correct_option'] = value[6] - 1
         bot.send_poll(chat_id=message.chat.id, question=value[1], options=answers, type='quiz',
                       correct_option_id=value[6] - 1, open_period=30, is_anonymous=False)
-        question_number += 1
+        user_id_to_tests_options[message.chat.id][0]['question_number'] += 1
         break
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     button_next_question = types.KeyboardButton('Следующий вопрос')
