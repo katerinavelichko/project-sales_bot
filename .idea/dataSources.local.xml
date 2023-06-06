@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="dataSourceStorageLocal" created-in="PY-223.8617.48">
+  <component name="dataSourceStorageLocal" created-in="PY-223.8836.43">
     <data-source name="server.db" uuid="91970a0f-318a-4d1b-a9ee-916f92a7b1a9">
       <database-info product="SQLite" version="3.40.1" jdbc-version="4.2" driver-name="SQLite JDBC" driver-version="3.40.1.0" dbms="SQLITE" exact-version="3.40.1" exact-driver-version="3.40">
         <identifier-quote-string>&quot;</identifier-quote-string>
@@ -10,7 +10,7 @@
       <auth-provider>no-auth</auth-provider>
       <schema-mapping>
         <introspection-scope>
-          <node kind="schema" qname="@" />
+          <node kind="schema" negative="1" />
         </introspection-scope>
       </schema-mapping>
     </data-source>
@@ -23,7 +23,7 @@
       <auth-provider>no-auth</auth-provider>
       <schema-mapping>
         <introspection-scope>
-          <node kind="schema" qname="@" />
+          <node kind="schema" negative="1" />
         </introspection-scope>
       </schema-mapping>
     </data-source>
@@ -36,21 +36,58 @@
       <auth-provider>no-auth</auth-provider>
       <schema-mapping>
         <introspection-scope>
-          <node kind="schema" qname="@" />
+          <node kind="schema" negative="1" />
         </introspection-scope>
       </schema-mapping>
     </data-source>
     <data-source name="@server.redshift.amazonaws.com" uuid="070f08ef-78f7-4862-bc67-7c680c823aa2">
       <database-info product="" version="" jdbc-version="" driver-name="" driver-version="" dbms="REDSHIFT" exact-version="0" />
-      <schema-mapping />
+      <schema-mapping>
+        <introspection-scope>
+          <node kind="database" negative="1" />
+        </introspection-scope>
+      </schema-mapping>
     </data-source>
     <data-source name="identifier.sqlite" uuid="11948e80-db86-4d7e-967c-b890c791535e">
-      <database-info product="" version="" jdbc-version="" driver-name="" driver-version="" dbms="SQLITE" exact-version="0" />
-      <schema-mapping />
+      <database-info product="SQLite" version="3.40.1" jdbc-version="4.2" driver-name="SQLite JDBC" driver-version="3.40.1.0" dbms="SQLITE" exact-version="3.40.1" exact-driver-version="3.40">
+        <identifier-quote-string>&quot;</identifier-quote-string>
+      </database-info>
+      <case-sensitivity plain-identifiers="mixed" quoted-identifiers="mixed" />
+      <schema-mapping>
+        <introspection-scope>
+          <node kind="schema" negative="1" />
+        </introspection-scope>
+      </schema-mapping>
     </data-source>
     <data-source name="identifier.sqlite [2]" uuid="353089dd-3f53-4787-9e61-6283dce8350e">
-      <database-info product="" version="" jdbc-version="" driver-name="" driver-version="" dbms="SQLITE" exact-version="0" />
-      <schema-mapping />
+      <database-info product="SQLite" version="3.40.1" jdbc-version="4.2" driver-name="SQLite JDBC" driver-version="3.40.1.0" dbms="SQLITE" exact-version="3.40.1" exact-driver-version="3.40">
+        <identifier-quote-string>&quot;</identifier-quote-string>
+      </database-info>
+      <case-sensitivity plain-identifiers="mixed" quoted-identifiers="mixed" />
+      <schema-mapping>
+        <introspection-scope>
+          <node kind="schema" negative="1" />
+        </introspection-scope>
+      </schema-mapping>
+    </data-source>
+    <data-source name="identifier.sqlite [3]" uuid="ebbf154a-2b33-45dc-a4fd-db10f66d4776">
+      <database-info product="SQLite" version="3.40.1" jdbc-version="4.2" driver-name="SQLite JDBC" driver-version="3.40.1.0" dbms="SQLITE" exact-version="3.40.1" exact-driver-version="3.40">
+        <identifier-quote-string>&quot;</identifier-quote-string>
+      </database-info>
+      <case-sensitivity plain-identifiers="mixed" quoted-identifiers="mixed" />
+      <schema-mapping>
+        <introspection-scope>
+          <node kind="schema" negative="1" />
+        </introspection-scope>
+      </schema-mapping>
+    </data-source>
+    <data-source name="user_statistics@db4free.net" uuid="54f774f5-2f50-4a76-a6ad-d7e484c41b8a">
+      <database-info product="" version="" jdbc-version="" driver-name="" driver-version="" dbms="MYSQL" exact-version="0" />
+      <schema-mapping>
+        <introspection-scope>
+          <node kind="schema" negative="1" />
+        </introspection-scope>
+      </schema-mapping>
     </data-source>
   </component>
 </project>

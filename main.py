@@ -9,6 +9,7 @@ from jinja2 import Template
 from sendmail import mas_to_string, send_email, ask_boss
 import queue
 import requests
+from flask import request
 from html2image import Html2Image
 from PIL import Image
 from flask import Flask, render_template
@@ -20,10 +21,10 @@ from threading import Lock
 lock = Lock()
 
 bot = telebot.TeleBot('5844570225:AAHVbCClhE53DdtM-RpZ1vKjrPPB4j_I538', 'markdown')
-con = sqlite3.connect("server.db", check_same_thread=False)
-cur = con.cursor()
-conn = sqlite3.connect('users.db', check_same_thread=False)
-cursor = conn.cursor()
+db_server = sqlite3.connect("server.db", check_same_thread=False)
+cur = db_server.cursor()
+db_users = sqlite3.connect('users.db', check_same_thread=False)
+cursor = db_users.cursor()
 
 
 def set_main_menu():
@@ -50,13 +51,18 @@ def set_main_menu():
 def db_table_val1(user_id: int, user_name: str, user_status: str, username: str):
     cursor.execute('INSERT INTO users (user_id, user_name, user_status, username) VALUES (?, ?, ?, ?)',
                    (user_id, user_name, user_status, username))
-    conn.commit()
+    db_users.commit()
 
 
 def db_table_val2(user_id: int, user_status: str, user_boss: str):
     cursor.execute('INSERT INTO boss_to_users (user_id, user_status, user_boss) VALUES (?, ?, ?)',
                    (user_id, user_status, user_boss))
-    conn.commit()
+    db_users.commit()
+
+def db_table_val3(user_id: int, user_name: str, first_name: str, second_name: str, user_status: str, test_password: int, correct_answers: int, boss_id: int):
+    cur.execute('INSERT INTO statistics(user_id, user_name, first_name, second_name, user_status, test_password, correct_answers, boss_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                   (user_id, user_name, first_name, second_name, user_status, test_password, correct_answers, boss_id))
+    db_server.commit()
 
 
 # эта функция обрезает чёрный фон вокруг картинки со статистикой
@@ -127,20 +133,27 @@ def get_text_messages(message):
         bot.send_message(message.from_user.id, "Напишите /start")
         # mutex.release()
     elif message.text == "/show_statistic":
+        user_id = message.from_user.id
+        requests.post('http://127.0.0.1:8080/update', json={"user_id": user_id})
         for value in cursor.execute('SELECT * FROM users WHERE user_id=?', (message.from_user.id,)):
             print(value[2], ' ', value[3])
-            if value[2] == 'manager':
+            if value[2] == 'boss':
                 murkup = types.ReplyKeyboardMarkup(resize_keyboard=True)
                 webAppTest = types.WebAppInfo('https://anyashishkina.github.io/test_repository/')
                 murkup.add(types.InlineKeyboardButton('Заполните форму', web_app=webAppTest))
                 bot.send_message(message.from_user.id, 'Выберите тип клиента', reply_markup=murkup)
-        hti = Html2Image()
-        hti.screenshot(html_str=requests.get('http://127.0.0.1:8080/').text, save_as='statistic.png')
-        crop_background('statistic.png')
-        # mutex.acquire()
-        bot.send_photo(message.chat.id, photo=open('test.png', 'rb'),
-                       caption='Статистика')  # бот показывает картинку
-        # mutex.release()
+            else:
+                user_id = message.from_user.id
+                requests.post('http://127.0.0.1:8080/update', json={"user_id": user_id})
+
+                hti = Html2Image()
+                hti.screenshot(url=f'http://127.0.0.1:8080/?user_id={user_id}', save_as='statistic.png')
+
+                crop_background('statistic.png')
+                # mutex.acquire()
+                bot.send_photo(message.chat.id, photo=open('statistic.png', 'rb'),
+                               caption='Статистика')  # бот показывает картинку
+                # mutex.release()
     elif message.text == "Привет":
         # mutex.acquire()
         bot.send_message(message.from_user.id, "Здравствуйте! Напишите /help")
@@ -313,12 +326,12 @@ def handle_poll_answer(poll_answer):
         if len(queryy) > 0:
             cursor.execute('Update  test_results  SET num_of_right_answers=? WHERE user_id=? AND  test_id=?',
                            (result, user_id,user_id_to_test_boss_key[poll_answer.user.id][0]))
-            conn.commit()
+            db_users.commit()
         else:
             cursor.execute(
                 'INSERT Into test_results(user_id , test_id,  num_of_right_answers, num_of_questions) VALUES(?, ? ,? ,?)',
                 (user_id, user_id_to_test_boss_key[poll_answer.user.id][0], result, user_id_to_num_questions[poll_answer.user.id][0]))
-            conn.commit()
+            db_users.commit()
         user_id_to_tests_options[poll_answer.user.id][0]['result'] = 0
     # if test_id == 4 and b2b_or_b2c == 0:
     if user_id_to_tests_options[poll_answer.user.id][0]['test_id'] == 25 and \
@@ -389,6 +402,9 @@ def handle_poll_answer(poll_answer):
         user_id_to_tests_options[poll_answer.user.id][0]['result'] = 0
     elif user_id_to_tests_options[poll_answer.user.id][0]['question_number'] == 4 and \
             user_id_to_tests_options[poll_answer.user.id][0]['b2b_or_b2c'] == 2:
+        cur.execute('UPDATE statistics SET correct_answers=? WHERE test_password=? AND user_id=?',
+                    (user_id_to_tests_options[poll_answer.user.id][0]['result'], user_id_to_tests_options[poll_answer.user.id][0]['test'], poll_answer.user.id))
+        db_server.commit()
         user_id_to_tests_options[poll_answer.user.id][0]['b2b_or_b2c'] = 2
 
         # mutex.acquire()
@@ -401,14 +417,24 @@ def handle_poll_answer(poll_answer):
 @bot.message_handler(content_types=['web_app_data'])
 def web_app(message: types.Message):
     res = json.loads(message.web_app_data.data)
-    first_name = res.get("first_name")
-    last_name = res.get("last_name")
+    first_name = res.get("firstName")
+    last_name = res.get("lastName")
     if first_name is not None and last_name is not None:
+        for value in cur.execute("SELECT * FROM statistics WHERE first_name = ? AND second_name = ?", (first_name, last_name,)):
+            requests.post('http://127.0.0.1:8080/update', json={"user_id": value[0]})
 
-        # mutex.acquire()
-        bot.send_message(message.from_user.id, f'Имя: {first_name}\nФамилия: {last_name}',
-                         reply_markup=types.ReplyKeyboardRemove())
-        # mutex.release()
+            hti = Html2Image()
+            hti.screenshot(url=f'http://127.0.0.1:8080/?user_id={value[0]}', save_as='statistic.png')
+
+            crop_background('statistic.png')
+            # mutex.acquire()
+            bot.send_photo(message.chat.id, photo=open('statistic.png', 'rb'),
+                           caption='Статистика')  # бот показывает картинку
+            # mutex.release()
+            # mutex.acquire()
+            bot.send_message(message.from_user.id, f'Имя: {first_name}\nФамилия: {last_name}',
+                             reply_markup=types.ReplyKeyboardRemove())
+            # mutex.release()
     else:
 
         # mutex.acquire()
@@ -420,7 +446,15 @@ def web_app(message: types.Message):
 def callback_worker(call):
     if call.data == "manager" or "boss":
         if call.data == "manager":
-
+            cnt_of_users_in_table = 0
+            for value in cur.execute("SELECT * FROM statistics WHERE user_status = ?", ('manager',)):
+                if call.from_user.username == value[1]:
+                    cnt_of_users_in_table += 1
+            if cnt_of_users_in_table == 0:
+                db_table_val3(user_id=call.from_user.id, user_name=call.from_user.username,
+                              first_name=call.from_user.first_name, second_name=call.from_user.last_name,
+                              user_status='manager', test_password=0,
+                              correct_answers=0, boss_id=0)
             # mutex.acquire()
             bot.send_message(call.from_user.id, "Вам предстоит выбрать тип продаж. ")
             # mutex.release()
@@ -467,54 +501,53 @@ def callback_worker(call):
                 bot.register_next_step_handler(send, set_boss)
 
     if call.data == "typeofclientb" or call.data == "typeofclientc":
-        if call.data == "typeofclientb" or call.data == "typeofclientc":
-            if call.data == "typeofclientb":
-                user_id_to_tests_options[call.message.chat.id][0]['test'] += 1000
-                user_id_to_tests_options[call.message.chat.id][0]['b2b_or_b2c'] = 1
-                sms1 = 'Отлично! Вы выбрали продажи компании/магазину. Пожалуйста пройдите тест для определения уровня.'
+        if call.data == "typeofclientb":
+            user_id_to_tests_options[call.message.chat.id][0]['test'] += 1000
+            user_id_to_tests_options[call.message.chat.id][0]['b2b_or_b2c'] = 1
+            sms1 = 'Отлично! Вы выбрали продажи компании/магазину. Пожалуйста пройдите тест для определения уровня.'
 
-                # mutex.acquire()
-                bot.send_message(call.message.chat.id, sms1)
-                # mutex.release()
-                for value in cur.execute("SELECT * FROM entrance_test_b2b"):
-                    answers = [value[2], value[3], value[4]]
-                    user_id_to_tests_options[call.message.chat.id][0]['correct_option'] = value[5]
-                    bot.send_poll(chat_id=call.message.chat.id, question=value[1], options=answers, type='quiz',
-                                  correct_option_id=value[5], open_period=30, is_anonymous=False)
-                    user_id_to_tests_options[call.from_user.id][0]['test_id'] += 1
-                    break
-                markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-                button_next_question = types.KeyboardButton('Следующий вопрос')
-                markup.row(button_next_question)
+            # mutex.acquire()
+            bot.send_message(call.message.chat.id, sms1)
+            # mutex.release()
+            for value in cur.execute("SELECT * FROM entrance_test_b2b"):
+                answers = [value[2], value[3], value[4]]
+                user_id_to_tests_options[call.message.chat.id][0]['correct_option'] = value[5]
+                bot.send_poll(chat_id=call.message.chat.id, question=value[1], options=answers, type='quiz',
+                              correct_option_id=value[5], open_period=30, is_anonymous=False)
+                user_id_to_tests_options[call.from_user.id][0]['test_id'] += 1
+                break
+            markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            button_next_question = types.KeyboardButton('Следующий вопрос')
+            markup.row(button_next_question)
 
-                # mutex.acquire()
-                bot.send_message(call.message.chat.id,
-                                 'Когда будете готовы перейти к следующему вопросу, нажмите кнопку "Следующий вопрос" ',
-                                 reply_markup=markup)
-                # mutex.release()
-            else:
-                user_id_to_tests_options[call.message.chat.id][0]['test'] += 2000
-                sms1 = 'Отлично! Вы выбрали продажи частному лицу. Пожалуйста пройдите тест для определения уровня.'
+            # mutex.acquire()
+            bot.send_message(call.message.chat.id,
+                             'Когда будете готовы перейти к следующему вопросу, нажмите кнопку "Следующий вопрос" ',
+                             reply_markup=markup)
+            # mutex.release()
+        else:
+            user_id_to_tests_options[call.message.chat.id][0]['test'] += 2000
+            sms1 = 'Отлично! Вы выбрали продажи частному лицу. Пожалуйста пройдите тест для определения уровня.'
 
-                # mutex.acquire()
-                bot.send_message(call.message.chat.id, sms1)
-                # mutex.release()
-                for value in cur.execute("SELECT * FROM entrance_test_b2c"):
-                    answers = [value[2], value[3], value[4]]
-                    user_id_to_tests_options[call.from_user.id][0]['correct_option'] = value[5]
-                    bot.send_poll(chat_id=call.message.chat.id, question=value[1], options=answers, type='quiz',
-                                  correct_option_id=value[5], open_period=30, is_anonymous=False)
-                    user_id_to_tests_options[call.from_user.id][0]['test_id'] += 1
-                    break
-                markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-                button_next_question = types.KeyboardButton('Следующий вопрос')
-                markup.row(button_next_question)
+            # mutex.acquire()
+            bot.send_message(call.message.chat.id, sms1)
+            # mutex.release()
+            for value in cur.execute("SELECT * FROM entrance_test_b2c"):
+                answers = [value[2], value[3], value[4]]
+                user_id_to_tests_options[call.from_user.id][0]['correct_option'] = value[5]
+                bot.send_poll(chat_id=call.message.chat.id, question=value[1], options=answers, type='quiz',
+                              correct_option_id=value[5], open_period=30, is_anonymous=False)
+                user_id_to_tests_options[call.from_user.id][0]['test_id'] += 1
+                break
+            markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+            button_next_question = types.KeyboardButton('Следующий вопрос')
+            markup.row(button_next_question)
 
-                # mutex.acquire()
-                bot.send_message(call.message.chat.id,
-                                 'Когда будете готовы перейти к следующему вопросу, нажмите кнопку "Следующий вопрос" ',
-                                 reply_markup=markup)
-                # mutex.release()
+            # mutex.acquire()
+            bot.send_message(call.message.chat.id,
+                             'Когда будете готовы перейти к следующему вопросу, нажмите кнопку "Следующий вопрос" ',
+                             reply_markup=markup)
+            # mutex.release()
     elif call.data == 'loyal_client' or call.data == 'new_client' or call.data == 'negative_client' or call.data == 'doubting_client':
         if call.data == 'loyal_client':
             user_id_to_tests_options[call.message.chat.id][0]['test'] += 10
@@ -548,6 +581,15 @@ def callback_worker(call):
         # mutex.release()
     if user_id_to_tests_options[call.message.chat.id][0]['test'] in [2121, 2122, 2123, 2111, 2112, 2113, 2131, 2132,
                                                                      2133, 2141, 2142, 2143]:
+        cnt_of_passed_test = 0
+        for value in cur.execute("SELECT * FROM statistics"):
+            if call.from_user.username == value[1] and user_id_to_tests_options[call.message.chat.id][0]['test'] == value[5]:
+                cnt_of_passed_test += 1
+        if cnt_of_passed_test == 0:
+            db_table_val3(user_id=call.from_user.id, user_name=call.from_user.username,
+                          first_name=call.from_user.first_name, second_name=call.from_user.last_name,
+                          user_status='manager', test_password=user_id_to_tests_options[call.message.chat.id][0]['test'],
+                          correct_answers=0, boss_id=0)
         for value in cur.execute("SELECT * FROM main_tests WHERE test_password=? AND question_number=?",
                                  (user_id_to_tests_options[call.message.chat.id][0]['test'],
                                   user_id_to_tests_options[call.message.chat.id][0]['question_number'],)):
@@ -580,7 +622,7 @@ def set_boss(message):
     cursor.execute(
         string,
         (msg, user_id))
-    conn.commit()
+    db_users.commit()
 
 
 from collections import defaultdict
@@ -633,7 +675,6 @@ def test_from_boss(message):
                      reply_markup=markup)
     # mutex.release()
 
-
 @bot.message_handler()
 def ask_key_word(message):
     keyword = message.text
@@ -650,7 +691,7 @@ def ask_key_word(message):
         cursor.execute(
             'INSERT INTO testbase (question_number,test_id) VALUES (?, ?)',
             (1, keyword))
-        conn.commit()
+        db_users.commit()
         msg = bot.send_message(message.chat.id, 'Введите количество вопросов')
         bot.register_next_step_handler(msg, numbers)
 
@@ -691,7 +732,7 @@ def read_questions(message):
         cursor.execute(
             string,
             (2, keyword))
-        conn.commit()
+        db_users.commit()
     elif len(test_id_to_numbers[keyword]) > 2:
         quest_num = int(test_id_to_numbers[keyword][-1]) + 1
         test_id_to_numbers[keyword].append(quest_num)
@@ -699,13 +740,13 @@ def read_questions(message):
         cursor.execute(
             string,
             (quest_num, keyword))
-        conn.commit()
+        db_users.commit()
 
     string = 'UPDATE testbase SET question = ? WHERE test_id=? and question_number=?'
     cursor.execute(
         string,
         (msg, keyword, int(test_id_to_numbers[keyword][-1])))
-    conn.commit()
+    db_users.commit()
 
     with mutex:
         send = bot.send_message(message.chat.id, f'Введите 1-й вариант ответа')
@@ -739,7 +780,7 @@ def read_ans(message):
             cursor.execute(
                 string,
                 (msg, keyword, int(test_id_to_numbers[keyword][-1])))
-            conn.commit()
+            db_users.commit()
         if test_id_to_ans[keyword][-1] < 5:
             send = bot.send_message(message.chat.id, f'Введите {int(test_id_to_ans[keyword][-1])}-й вариант ответа')
             bot.register_next_step_handler(send, read_ans)
@@ -757,18 +798,35 @@ def read_ans(message):
 
 
 app = Flask(__name__)
-
-
+results = {}
 @app.route('/', methods=['GET'])
 def get_data():
-    results = {
-        "test1": 0, "test2": 1, "test3": 0,
-        "test4": 2, "test5": 3, "test6": 1,
-        "test7": 0, "test8": 3, "test9": 1,
-        "test10": 2, "test11": 3, "test12": 1,
-    }
-    matrix = [list(results.values())[i:i + 4] for i in range(0, len(results), 4)]
+    user_id = int(request.args.get('user_id', ''))
+    matrix = [list(results.get(user_id, {}).values())[i:i + 4] for i in range(0, len(results.get(user_id, {})), 4)]
     return render_template('statistics_page.html', matrix=matrix)
+
+
+@app.route('/update', methods=['POST'])
+def update_data():
+    user_id = int(request.json['user_id'])
+    print(user_id)
+    test_values = {
+        2111: 0, 2112: 0, 2113: 0,
+        2121: 0, 2122: 0, 2123: 0,
+        2131: 0, 2132: 0, 2133: 0,
+        2141: 0, 2142: 0, 2143: 0
+    }
+    for value in cur.execute("SELECT * FROM statistics WHERE user_id = ?", (user_id,)):
+        if value[5] in test_values:
+            test_values[value[5]] = value[6]
+
+    results[user_id] = {
+        "test1": test_values[2111], "test2": test_values[2121], "test3": test_values[2131],
+        "test4": test_values[2141], "test5": test_values[2112], "test6": test_values[2122],
+        "test7": test_values[2132], "test8": test_values[2142], "test9": test_values[2113],
+        "test10": test_values[2123], "test11": test_values[2133], "test12": test_values[2143],
+    }
+    return 'Updated'
 
 
 def start_bot():
