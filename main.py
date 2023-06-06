@@ -47,18 +47,19 @@ def set_main_menu():
 
     bot.set_my_commands(main_menu_commands)
 
-
+# создание базы данных с пользователям
 def db_table_val1(user_id: int, user_name: str, user_status: str, username: str):
     cursor.execute('INSERT INTO users (user_id, user_name, user_status, username) VALUES (?, ?, ?, ?)',
                    (user_id, user_name, user_status, username))
     db_users.commit()
 
-
+# создание базы данных для отслеживания взаимосвязи босса и менеджера
 def db_table_val2(user_id: int, user_status: str, user_boss: str):
     cursor.execute('INSERT INTO boss_to_users (user_id, user_status, user_boss) VALUES (?, ?, ?)',
                    (user_id, user_status, user_boss))
     db_users.commit()
 
+# создание базы данных для статистики
 def db_table_val3(user_id: int, user_name: str, first_name: str, second_name: str, user_status: str, test_password: int, correct_answers: int, boss_id: int):
     cur.execute('INSERT INTO statistics(user_id, user_name, first_name, second_name, user_status, test_password, correct_answers, boss_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
                    (user_id, user_name, first_name, second_name, user_status, test_password, correct_answers, boss_id))
@@ -68,10 +69,9 @@ def db_table_val3(user_id: int, user_name: str, first_name: str, second_name: st
 # эта функция обрезает чёрный фон вокруг картинки со статистикой
 def crop_background(file_name):
     im = Image.open(file_name)
-    pixels = im.load()  # список с пикселями
-    x, y = im.size  # ширина (x) и высота (y) изображения
+    pixels = im.load()
+    x, y = im.size
 
-    # левая граница обрезки
     left = 0
     for i in range(x):
         if max(max(pixels[i, j][:3]) for j in range(y)) == 0:
@@ -79,7 +79,6 @@ def crop_background(file_name):
         else:
             break
 
-    # правая граница обрезки
     right = 0
     for i in range(x - 1, -1, -1):
         if max(max(pixels[i, j][:3]) for j in range(y)) == 0:
@@ -87,7 +86,6 @@ def crop_background(file_name):
         else:
             break
 
-    # верхняя граница обрезки
     up = 0
     for j in range(y):
         if max(max(pixels[i, j][:3]) for i in range(x)) == 0:
@@ -95,7 +93,6 @@ def crop_background(file_name):
         else:
             break
 
-    # нижняя граница обрезки
     down = 0
     for j in range(y - 1, -1, -1):
         if max(max(pixels[i, j][:3]) for i in range(x)) == 0:
@@ -103,22 +100,21 @@ def crop_background(file_name):
         else:
             break
 
-    im.crop((left, up, right, down)).save(file_name)  # перезаписываем старое изображение новым
+    im.crop((left, up, right, down)).save(file_name)
 
 
 from collections import defaultdict
-
 user_id_to_tests_options = defaultdict(list)
 
 
-
+# обработка команд бота
 @bot.message_handler(content_types=['text'])
 def get_text_messages(message):
     sms2 = 'Вы можете выбрать один из 4 типов клиентов: '
     if message.text == "/start":
         user_id = message.from_user.id
         user_id_to_tests_options[user_id].append(
-            {'test_id': 2, 'b2b_or_b2c': 0, 'test': 0, 'question_number': 1, 'correct_option': -1, 'result': 0,
+            {'test_id': 2, 'b2b_or_b2c': 'b2c', 'test': 0, 'question_number': 1, 'correct_option': -1, 'result': 0,
              'level': 0})
         keyboard = types.InlineKeyboardMarkup()
         key_manager = types.InlineKeyboardButton(text='Менеджер', callback_data="manager")
@@ -128,15 +124,16 @@ def get_text_messages(message):
         # mutex.acquire()
         bot.send_message(message.from_user.id, 'Выберите вашу роль', reply_markup=keyboard)
         # mutex.release()
+
     elif message.text == "/help":
         # mutex.acquire()
         bot.send_message(message.from_user.id, "Напишите /start")
         # mutex.release()
+
     elif message.text == "/show_statistic":
         user_id = message.from_user.id
         requests.post('http://127.0.0.1:8080/update', json={"user_id": user_id})
         for value in cursor.execute('SELECT * FROM users WHERE user_id=?', (message.from_user.id,)):
-            print(value[2], ' ', value[3])
             if value[2] == 'boss':
                 murkup = types.ReplyKeyboardMarkup(resize_keyboard=True)
                 webAppTest = types.WebAppInfo('https://anyashishkina.github.io/test_repository/')
@@ -154,10 +151,7 @@ def get_text_messages(message):
                 bot.send_photo(message.chat.id, photo=open('statistic.png', 'rb'),
                                caption='Статистика')  # бот показывает картинку
                 # mutex.release()
-    elif message.text == "Привет":
-        # mutex.acquire()
-        bot.send_message(message.from_user.id, "Здравствуйте! Напишите /help")
-        # mutex.release()
+
     elif message.text == "/send_statistics_to_mail":
         # mutex.acquire()
         send = bot.send_message(message.chat.id, 'Введите Ваш email')
@@ -170,6 +164,7 @@ def get_text_messages(message):
                                 'Создайте пароль для доступа к вашему тесту, он может состоять только цифр')
         # mutex.release()
         bot.register_next_step_handler(send, ask_key_word)
+
     elif message.text == '/choosetestb2b':
         if str(user_id_to_tests_options[message.chat.id][0]['test'])[0] == "2":
             # mutex.acquire()
@@ -193,6 +188,7 @@ def get_text_messages(message):
             # mutex.acquire()
             bot.send_message(message.from_user.id, 'Выберите тип клиента', reply_markup=keyboard)
             # mutex.release()
+
     elif message.text == '/choosetestb2c':
         if str(user_id_to_tests_options[message.chat.id][0]['test'])[0] == "1":
             # mutex.acquire()
@@ -216,9 +212,10 @@ def get_text_messages(message):
             # mutex.acquire()
             bot.send_message(message.from_user.id, 'Выберите тип клиента', reply_markup=keyboard)
             # mutex.release()
+
     elif message.text == "Следующий вопрос":
         user_id = message.from_user.id
-        if user_id_to_tests_options[message.chat.id][0]['b2b_or_b2c'] == 1:
+        if user_id_to_tests_options[message.chat.id][0]['b2b_or_b2c'] == 'b2b':
             for value in cur.execute("SELECT * FROM entrance_test_b2b WHERE id=?",
                                      (user_id_to_tests_options[user_id][0]['test_id'],)):
                 answers = [value[2], value[3], value[4]]
@@ -235,7 +232,8 @@ def get_text_messages(message):
                     bot.send_message(message.from_user.id, 'Нажмите кнопку "Выбрать тест", когда будете готовы.',
                                      reply_markup=markup)
                     # mutex.release()
-        elif user_id_to_tests_options[message.chat.id][0]['b2b_or_b2c'] == 0:
+
+        elif user_id_to_tests_options[message.chat.id][0]['b2b_or_b2c'] == 'b2c':
             for value in cur.execute("SELECT * FROM entrance_test_b2c WHERE id=?",
                                      (user_id_to_tests_options[message.chat.id][0]['test_id'],)):
                 answers = [value[2], value[3], value[4]]
@@ -253,7 +251,8 @@ def get_text_messages(message):
                     bot.send_message(message.from_user.id, 'Нажмите кнопку "Выбрать тест", когда будете готовы.',
                                      reply_markup=markup)
                     # mutex.release()
-        elif user_id_to_tests_options[message.chat.id][0]['b2b_or_b2c'] == 3:
+
+        elif user_id_to_tests_options[message.chat.id][0]['b2b_or_b2c'] == 'boss_test':
             for value in cursor.execute("SELECT * FROM testbase WHERE question_number=? and test_id=?",
                                         (user_id_to_tests_options[message.chat.id][0]['question_number'],
                                          user_id_to_test_boss_key[message.chat.id][0])):
@@ -262,6 +261,7 @@ def get_text_messages(message):
                 bot.send_poll(chat_id=message.chat.id, question=value[1], options=answers, type='quiz',
                               correct_option_id=value[6] - 1, open_period=30, is_anonymous=False)
                 user_id_to_tests_options[message.chat.id][0]['question_number'] += 1
+
         else:
             for value in cur.execute("SELECT * FROM main_tests WHERE test_password=? AND question_number=?",
                                      (user_id_to_tests_options[message.chat.id][0]['test'],
@@ -276,8 +276,8 @@ def get_text_messages(message):
                 bot.send_message(message.from_user.id, 'Тест завершён.',
                                  reply_markup=types.ReplyKeyboardRemove())
                 # mutex.release()
-    elif message.text == 'Выбрать тест':
 
+    elif message.text == 'Выбрать тест':
         # mutex.acquire()
         bot.send_message(message.chat.id, "Вам предстоит выбрать тип клиента и форму коммуникаций",
                          reply_markup=types.ReplyKeyboardRemove())
@@ -294,22 +294,23 @@ def get_text_messages(message):
         # mutex.acquire()
         bot.send_message(message.chat.id, sms2, reply_markup=keyboard)
         # mutex.release()
-    else:
 
+    else:
         # mutex.acquire()
         bot.send_message(message.from_user.id, "Я вас не понимаю. Напишите /help.")
         # mutex.release()
 
 
+# подсчёт правильных ответов на тесты
 @bot.poll_answer_handler()
 def handle_poll_answer(poll_answer):
     global result
     selected_option = poll_answer.option_ids[0]
     if user_id_to_tests_options[poll_answer.user.id][0]['correct_option'] == selected_option:
         user_id_to_tests_options[poll_answer.user.id][0]['result'] += 1
-    if user_id_to_tests_options[poll_answer.user.id][0]['b2b_or_b2c'] == 3 and \
-            user_id_to_tests_options[poll_answer.user.id][0]['question_number'] == user_id_to_num_questions[poll_answer.user.id][0]+ 1:
 
+    if user_id_to_tests_options[poll_answer.user.id][0]['b2b_or_b2c'] == 'boss_test' and \
+            user_id_to_tests_options[poll_answer.user.id][0]['question_number'] == user_id_to_num_questions[poll_answer.user.id][0]+ 1:
         # mutex.acquire()
         bot.send_message(poll_answer.user.id, 'Тест завершён.',
                          reply_markup=types.ReplyKeyboardRemove())
@@ -333,10 +334,11 @@ def handle_poll_answer(poll_answer):
                 (user_id, user_id_to_test_boss_key[poll_answer.user.id][0], result, user_id_to_num_questions[poll_answer.user.id][0]))
             db_users.commit()
         user_id_to_tests_options[poll_answer.user.id][0]['result'] = 0
+
     # if test_id == 4 and b2b_or_b2c == 0:
     if user_id_to_tests_options[poll_answer.user.id][0]['test_id'] == 25 and \
-            user_id_to_tests_options[poll_answer.user.id][0]['b2b_or_b2c'] == 0:
-        user_id_to_tests_options[poll_answer.user.id][0]['b2b_or_b2c'] = 2
+            user_id_to_tests_options[poll_answer.user.id][0]['b2b_or_b2c'] == 'b2c':
+        user_id_to_tests_options[poll_answer.user.id][0]['b2b_or_b2c'] = 'choose_test'
 
         # mutex.acquire()
         result = user_id_to_tests_options[poll_answer.user.id][0]['result']
@@ -367,10 +369,11 @@ def handle_poll_answer(poll_answer):
                              'На данный момент ваш уровень - новичок. Вам будут предложены тесты из этой категории')
             # mutex.release()
         user_id_to_tests_options[poll_answer.user.id][0]['result'] = 0
+
     # elif test_id == 4 and b2b_or_b2c == 1:
     elif user_id_to_tests_options[poll_answer.user.id][0]['test_id'] == 29 and \
-            user_id_to_tests_options[poll_answer.user.id][0]['b2b_or_b2c'] == 1:
-        user_id_to_tests_options[poll_answer.user.id][0]['b2b_or_b2c'] = 2
+            user_id_to_tests_options[poll_answer.user.id][0]['b2b_or_b2c'] == 'b2b':
+        user_id_to_tests_options[poll_answer.user.id][0]['b2b_or_b2c'] = 'choose_test'
         # mutex.acquire()
         result = user_id_to_tests_options[poll_answer.user.id][0]['result']
         bot.send_message(poll_answer.user.id, f'Вы набрали {result} баллов из 29')
@@ -400,12 +403,13 @@ def handle_poll_answer(poll_answer):
                              'На данный момент ваш уровень - новичок. Вам будут предложены тесты из этой категории')
             # mutex.release()
         user_id_to_tests_options[poll_answer.user.id][0]['result'] = 0
+
     elif user_id_to_tests_options[poll_answer.user.id][0]['question_number'] == 4 and \
-            user_id_to_tests_options[poll_answer.user.id][0]['b2b_or_b2c'] == 2:
+            user_id_to_tests_options[poll_answer.user.id][0]['b2b_or_b2c'] == 'choose_test':
         cur.execute('UPDATE statistics SET correct_answers=? WHERE test_password=? AND user_id=?',
                     (user_id_to_tests_options[poll_answer.user.id][0]['result'], user_id_to_tests_options[poll_answer.user.id][0]['test'], poll_answer.user.id))
         db_server.commit()
-        user_id_to_tests_options[poll_answer.user.id][0]['b2b_or_b2c'] = 2
+        user_id_to_tests_options[poll_answer.user.id][0]['b2b_or_b2c'] = 'choose_test'
 
         # mutex.acquire()
         result = user_id_to_tests_options[poll_answer.user.id][0]['result']
@@ -414,6 +418,7 @@ def handle_poll_answer(poll_answer):
         user_id_to_tests_options[poll_answer.user.id][0]['result'] = 0
 
 
+# принятие данных из формы
 @bot.message_handler(content_types=['web_app_data'])
 def web_app(message: types.Message):
     res = json.loads(message.web_app_data.data)
@@ -435,13 +440,14 @@ def web_app(message: types.Message):
             bot.send_message(message.from_user.id, f'Имя: {first_name}\nФамилия: {last_name}',
                              reply_markup=types.ReplyKeyboardRemove())
             # mutex.release()
-    else:
 
+    else:
         # mutex.acquire()
         bot.send_message(message.from_user.id, "Данные отсутствуют", reply_markup=types.ReplyKeyboardRemove())
         # mutex.release()
 
 
+# реакция на кнопки
 @bot.callback_query_handler(func=lambda call: True)
 def callback_worker(call):
     if call.data == "manager" or "boss":
@@ -475,15 +481,17 @@ def callback_worker(call):
             # mutex.acquire()
             bot.send_message(call.from_user.id, b2c_msg, reply_markup=keyboard)
             # mutex.release()
-        elif call.data == "boss":
 
+        elif call.data == "boss":
             # mutex.acquire()
             bot.send_message(call.message.chat.id, 'Вы можете создать свой тест')
             # mutex.release()
+
         user_to = call.from_user.id
         info_user_to = cursor.execute("SELECT * FROM users WHERE user_id = " + str(user_to)).fetchall()
         if len(info_user_to) > 0:
             pass
+
         else:
             us_id = call.from_user.id
             us_name = call.from_user.first_name
@@ -503,9 +511,8 @@ def callback_worker(call):
     if call.data == "typeofclientb" or call.data == "typeofclientc":
         if call.data == "typeofclientb":
             user_id_to_tests_options[call.message.chat.id][0]['test'] += 1000
-            user_id_to_tests_options[call.message.chat.id][0]['b2b_or_b2c'] = 1
+            user_id_to_tests_options[call.message.chat.id][0]['b2b_or_b2c'] = 'b2b'
             sms1 = 'Отлично! Вы выбрали продажи компании/магазину. Пожалуйста пройдите тест для определения уровня.'
-
             # mutex.acquire()
             bot.send_message(call.message.chat.id, sms1)
             # mutex.release()
@@ -519,12 +526,12 @@ def callback_worker(call):
             markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
             button_next_question = types.KeyboardButton('Следующий вопрос')
             markup.row(button_next_question)
-
             # mutex.acquire()
             bot.send_message(call.message.chat.id,
                              'Когда будете готовы перейти к следующему вопросу, нажмите кнопку "Следующий вопрос" ',
                              reply_markup=markup)
             # mutex.release()
+
         else:
             user_id_to_tests_options[call.message.chat.id][0]['test'] += 2000
             sms1 = 'Отлично! Вы выбрали продажи частному лицу. Пожалуйста пройдите тест для определения уровня.'
@@ -542,12 +549,12 @@ def callback_worker(call):
             markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
             button_next_question = types.KeyboardButton('Следующий вопрос')
             markup.row(button_next_question)
-
             # mutex.acquire()
             bot.send_message(call.message.chat.id,
                              'Когда будете готовы перейти к следующему вопросу, нажмите кнопку "Следующий вопрос" ',
                              reply_markup=markup)
             # mutex.release()
+
     elif call.data == 'loyal_client' or call.data == 'new_client' or call.data == 'negative_client' or call.data == 'doubting_client':
         if call.data == 'loyal_client':
             user_id_to_tests_options[call.message.chat.id][0]['test'] += 10
@@ -568,6 +575,7 @@ def callback_worker(call):
         # mutex.acquire()
         bot.send_message(call.message.chat.id, sms3, reply_markup=keyboard)
         # mutex.release()
+
     elif call.data == 'phone_communication' or call.data == 'meet_communication' or call.data == 'message_communication':
         if call.data == 'phone_communication':
             user_id_to_tests_options[call.message.chat.id][0]['test'] += 1
@@ -579,6 +587,7 @@ def callback_worker(call):
         # mutex.acquire()
         bot.send_message(call.message.chat.id, sms5)
         # mutex.release()
+
     if user_id_to_tests_options[call.message.chat.id][0]['test'] in [2121, 2122, 2123, 2111, 2112, 2113, 2131, 2132,
                                                                      2133, 2141, 2142, 2143]:
         cnt_of_passed_test = 0
@@ -607,8 +616,9 @@ def callback_worker(call):
                          'Когда будете готовы перейти к следующему вопросу, нажмите кнопку "Следующий вопрос" ',
                          reply_markup=markup)
         # mutex.release()
+
     if call.data == "bosstest":
-        user_id_to_tests_options[call.message.chat.id][0]['b2b_or_b2c'] = 3
+        user_id_to_tests_options[call.message.chat.id][0]['b2b_or_b2c'] = 'boss_test'
         # mutex.acquire()
         msg = bot.send_message(call.message.chat.id, 'введите пароль от теста')
         # mutex.release()
@@ -637,6 +647,8 @@ states = defaultdict(list)
 cnt_to_user_id = defaultdict(list)
 user_id_to_test_boss_key = defaultdict(list)
 user_id_to_num_questions = defaultdict(list)
+
+
 @bot.message_handler()
 def ask_key_word_bosstest(message):
     user_id_to_test_boss_key[message.chat.id].append(message.text)
@@ -674,6 +686,7 @@ def test_from_boss(message):
                      'Когда будете готовы перейти к следующему вопросу, нажмите кнопку "Следующий вопрос" ',
                      reply_markup=markup)
     # mutex.release()
+
 
 @bot.message_handler()
 def ask_key_word(message):
@@ -797,6 +810,7 @@ def read_ans(message):
             states[keyword].append('answering')
 
 
+# передача данных в html код и изменение картинки
 app = Flask(__name__)
 results = {}
 @app.route('/', methods=['GET'])
@@ -806,6 +820,10 @@ def get_data():
     return render_template('statistics_page.html', matrix=matrix)
 
 
+# Комментарий к переменной test: 2000-категория b2c, 1000-категория b2b
+# 100-новичок, 200-продвинутый, 300-эксперт
+# 10-лояльный, 20-новый, 30-негативный, 40-сомневающийся
+# 1-телефон, 2-личная встреча, 3-переписка
 @app.route('/update', methods=['POST'])
 def update_data():
     user_id = int(request.json['user_id'])
