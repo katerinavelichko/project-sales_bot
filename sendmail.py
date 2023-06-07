@@ -2,15 +2,13 @@ import smtplib
 from email.mime.text import MIMEText
 from jinja2 import Template
 import sqlite3
-
-conn = sqlite3.connect('users.db', check_same_thread=False)
-cursor = conn.cursor()
-
 import telebot
+from collections import defaultdict
+
+db_users = sqlite3.connect('users.db', check_same_thread=False)
+cursor = db_users.cursor()
 
 bot = telebot.TeleBot('5844570225:AAHVbCClhE53DdtM-RpZ1vKjrPPB4j_I538', 'markdown')
-
-from collections import defaultdict
 
 boss_id_to_email = defaultdict(list)
 boss_id_to_workers = defaultdict(list)
