@@ -57,15 +57,15 @@
 </head>
 <body>
    <h1>Статистика молодцов!</h1>
-    <small>Здесь вы можете просмотреть свою статистику или статистику ваших подчиненных</small>
+    <small>Заполните форму для просмотра статистики вашего подчинённого</small>
 
     <form id="form" onsubmit="event.preventDefault(); submitForm();">
         <div id="form-fields">
             <label for="user-id">Ваш User ID:</label>
             <input type="text" id="user-id" required>
-            <label for="subordinate-first-name">Имя подчиненного (all - если требуется общая статистика):</label>
+            <label for="subordinate-first-name">Имя подчинённого:</label>
             <input type="text" id="subordinate-first-name" required>
-            <label for="subordinate-last-name">Фамилия подчиненного (all - если требуется общая статистика):</label>
+            <label for="subordinate-last-name">Фамилия подчинённого:</label>
             <input type="text" id="subordinate-last-name" required>
         </div>
         <button type="submit">Посмотреть статистику</button>
