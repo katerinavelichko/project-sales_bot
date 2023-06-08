@@ -1,9 +1,4 @@
-import smtplib
-from email.mime.text import MIMEText
-from jinja2 import Template
-import sqlite3
-import telebot
-from collections import defaultdict
+from importt import *
 
 db_users = sqlite3.connect('users.db', check_same_thread=False)
 cursor = db_users.cursor()
