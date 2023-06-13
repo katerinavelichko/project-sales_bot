@@ -1,5 +1,5 @@
 from importt import *
-from sendmail import mas_to_string, send_email, ask_boss
+from sendmail import ask_boss
 
 mutex = threading.Lock()
 lock = Lock()
@@ -31,22 +31,22 @@ def set_main_menu():
     bot.set_my_commands(main_menu_commands)
 
 
-# создание строки в базе данных с пользователям
-def db_table_val1(user_id: int, user_name: str, user_status: str, username: str):
+# создание строки в базе данных с пользователями
+def insert_into_users_table(user_id: int, user_name: str, user_status: str, username: str):
     cursor.execute('INSERT INTO users (user_id, user_name, user_status, username) VALUES (?, ?, ?, ?)',
                    (user_id, user_name, user_status, username))
     db_users.commit()
 
 
 # создание строки в базе данных для отслеживания взаимосвязи босса и менеджера
-def db_table_val2(user_id: int, user_status: str, user_boss: str):
+def insert_into_boss_to_users(user_id: int, user_status: str, user_boss: str):
     cursor.execute('INSERT INTO boss_to_users (user_id, user_status, user_boss) VALUES (?, ?, ?)',
                    (user_id, user_status, user_boss))
     db_users.commit()
 
 
 # создание строки в базе данных для статистики
-def db_table_val3(user_id: int, user_name: str, first_name: str, second_name: str, user_status: str, test_password: int,
+def insert_into_statistics_table(user_id: int, user_name: str, first_name: str, second_name: str, user_status: str, test_password: int,
                   correct_answers: int, boss_id: int):
     cur.execute(
         'INSERT INTO statistics(user_id, user_name, first_name, second_name, user_status, test_password, correct_answers, boss_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
@@ -62,7 +62,6 @@ user_id_to_tests_options = defaultdict(list)
 # обработка команд бота
 @bot.message_handler(content_types=['text'])
 def get_text_messages(message):
-    sms2 = 'Вы можете выбрать один из 4 типов клиентов: '
     if message.text == "/start":
         user_id = message.from_user.id
         user_id_to_tests_options[user_id].append(
@@ -98,7 +97,7 @@ def get_text_messages(message):
     elif message.text == "/send_statistics_to_mail":
         send = bot.send_message(message.chat.id, 'Введите Ваш email')
         bot.register_next_step_handler(send, ask_boss)
-    elif message.text.lower() == 'добавить тест' or message.text.lower() == '/addtest':
+    elif message.text.lower() in ['добавить тест', '/addtest']:
         send = bot.send_message(message.chat.id,
                                 'Создайте пароль для доступа к вашему тесту, он может состоять только цифр')
         bot.register_next_step_handler(send, ask_key_word)
@@ -210,7 +209,7 @@ def get_text_messages(message):
         keyboard.add(key_new)
         keyboard.add(key_negative)
         keyboard.add(key_doubting)
-        bot.send_message(message.chat.id, sms2, reply_markup=keyboard)
+        bot.send_message(message.chat.id, 'Вы можете выбрать один из 4 типов клиентов: ', reply_markup=keyboard)
     else:
         bot.send_message(message.from_user.id, "Я вас не понимаю. Напишите /help.")
 
@@ -276,14 +275,14 @@ def handle_poll_answer(poll_answer):
             user_id_to_tests_options[poll_answer.user.id][0]['b2b_or_b2c'] == 'b2b':
         user_id_to_tests_options[poll_answer.user.id][0]['b2b_or_b2c'] = 'choose_test'
         result = user_id_to_tests_options[poll_answer.user.id][0]['result']
-        bot.send_message(poll_answer.user.id, f'Вы набрали {result} баллов из 29')
-        if 25 >= user_id_to_tests_options[poll_answer.user.id][0]['result'] >= 23:
+        bot.send_message(poll_answer.user.id, f'Вы набрали {result} баллов из 28')
+        if 28 >= user_id_to_tests_options[poll_answer.user.id][0]['result'] >= 24:
             user_id_to_tests_options[poll_answer.user.id][0]['test'] += 300
             user_id_to_tests_options[poll_answer.user.id][0]['level'] += 300
             bot.send_message(poll_answer.user.id,
                              'На данный момент ваш уровень - эксперт. Вам будут предложены тесты из этой категории')
 
-        elif 22 >= user_id_to_tests_options[poll_answer.user.id][0]['result'] >= 20:
+        elif 23 >= user_id_to_tests_options[poll_answer.user.id][0]['result'] >= 20:
             user_id_to_tests_options[poll_answer.user.id][0]['test'] += 200
             user_id_to_tests_options[poll_answer.user.id][0]['level'] += 200
             bot.send_message(poll_answer.user.id,
@@ -335,34 +334,33 @@ def web_app(message: types.Message):
 @bot.callback_query_handler(func=lambda call: True)
 def callback_worker(call):
     if call.data == "manager" or "boss":
-        if call.data == "manager":
-            user_to = call.from_user.id
-            info_user_to = cursor.execute("SELECT * FROM users WHERE user_id = " + str(user_to)).fetchall()
-            if len(info_user_to) == 0:
-                us_id = call.from_user.id
-                us_name = call.from_user.first_name
-                if call.data == "manager":
-                    status = "manager"
-                else:
-                    status = "boss"
-                username = call.from_user.username
-                db_table_val1(user_id=us_id, user_name=us_name, user_status=status, username=username)
-                if status == 'manager':
-                    db_table_val2(user_id=us_id, user_status=status, user_boss=0)
-                    send = bot.send_message(call.message.chat.id,
-                                            'Введите id вашего руководителя, а в случае его отсутствия введите 0')
-                    bot.register_next_step_handler(send, set_boss)
+        us_id = call.from_user.id
+        info_user_to = cursor.execute("SELECT * FROM users WHERE user_id = " + str(us_id)).fetchall()
+        if len(info_user_to) == 0:
+            us_name = call.from_user.first_name
+            if call.data == "manager":
+                status = "manager"
             else:
-                send = bot.send_message(call.message.chat.id, 'Вы уже добавлены в базу данных! Вы готовы продолжить?')
-                bot.register_next_step_handler(send, choose_type)
+                status = "boss"
+            username = call.from_user.username
+            insert_into_users_table(user_id=us_id, user_name=us_name, user_status=status, username=username)
+            if status == 'manager':
+                insert_into_boss_to_users(user_id=us_id, user_status=status, user_boss=0)
+                send = bot.send_message(call.message.chat.id,
+                                        'Введите id вашего руководителя, а в случае его отсутствия введите 0')
+                bot.register_next_step_handler(send, set_boss)
+            else:
+                bot.send_message(call.message.chat.id, 'Вы можете создать свой тест')
+        elif call.data == "manager":
+            send = bot.send_message(call.message.chat.id, 'Вы уже добавлены в базу данных! Вы готовы продолжить?')
+            bot.register_next_step_handler(send, choose_type)
         elif call.data == "boss":
             bot.send_message(call.message.chat.id, 'Вы можете создать свой тест')
     if call.data == "typeofclientb" or call.data == "typeofclientc":
         if call.data == "typeofclientb":
             user_id_to_tests_options[call.message.chat.id][0]['test'] += 1000
             user_id_to_tests_options[call.message.chat.id][0]['b2b_or_b2c'] = 'b2b'
-            sms1 = 'Отлично! Вы выбрали продажи компании/магазину. Пожалуйста пройдите тест для определения уровня.'
-            bot.send_message(call.message.chat.id, sms1)
+            bot.send_message(call.message.chat.id, 'Отлично! Вы выбрали продажи компании/магазину. Пожалуйста пройдите тест для определения уровня.')
             for value in cur.execute("SELECT * FROM entrance_test_b2b"):
                 answers = [value[2], value[3], value[4]]
                 user_id_to_tests_options[call.message.chat.id][0]['correct_option'] = value[5]
@@ -379,8 +377,7 @@ def callback_worker(call):
 
         else:
             user_id_to_tests_options[call.message.chat.id][0]['test'] += 2000
-            sms1 = 'Отлично! Вы выбрали продажи частному лицу. Пожалуйста пройдите тест для определения уровня.'
-            bot.send_message(call.message.chat.id, sms1)
+            bot.send_message(call.message.chat.id, 'Отлично! Вы выбрали продажи частному лицу. Пожалуйста пройдите тест для определения уровня.')
             for value in cur.execute("SELECT * FROM entrance_test_b2c"):
                 answers = [value[2], value[3], value[4]]
                 user_id_to_tests_options[call.from_user.id][0]['correct_option'] = value[5]
@@ -403,7 +400,6 @@ def callback_worker(call):
             user_id_to_tests_options[call.message.chat.id][0]['test'] += 30
         elif call.data == 'doubting_client':
             user_id_to_tests_options[call.message.chat.id][0]['test'] += 40
-        sms3 = 'Давайте выберем форму коммуникации'
         keyboard = types.InlineKeyboardMarkup()
         key_phone = types.InlineKeyboardButton(text='Телефон', callback_data='phone_communication')
         key_meet = types.InlineKeyboardButton(text='Личная встреча', callback_data='meet_communication')
@@ -411,7 +407,7 @@ def callback_worker(call):
         keyboard.add(key_phone)
         keyboard.add(key_meet)
         keyboard.add(key_message)
-        bot.send_message(call.message.chat.id, sms3, reply_markup=keyboard)
+        bot.send_message(call.message.chat.id, 'Давайте выберем форму коммуникации', reply_markup=keyboard)
     elif call.data == 'phone_communication' or call.data == 'meet_communication' or call.data == 'message_communication':
         if call.data == 'phone_communication':
             user_id_to_tests_options[call.message.chat.id][0]['test'] += 1
@@ -419,8 +415,7 @@ def callback_worker(call):
             user_id_to_tests_options[call.message.chat.id][0]['test'] += 2
         elif call.data == 'message_communication':
             user_id_to_tests_options[call.message.chat.id][0]['test'] += 3
-        sms5 = 'Поздравляю! Вы готовы проходить тест. Он будет сгенерирован нашей системой.'
-        bot.send_message(call.message.chat.id, sms5)
+        bot.send_message(call.message.chat.id, 'Поздравляю! Вы готовы проходить тест. Он будет сгенерирован нашей системой.')
     if user_id_to_tests_options[call.message.chat.id][0]['test'] in [2121, 2122, 2123, 2111, 2112, 2113, 2131, 2132,
                                                                      2133, 2141, 2142, 2143]:
         cnt_of_passed_test = 0
@@ -429,7 +424,7 @@ def callback_worker(call):
                     value[5]:
                 cnt_of_passed_test += 1
         if cnt_of_passed_test == 0:
-            db_table_val3(user_id=call.from_user.id, user_name=call.from_user.username,
+            insert_into_statistics_table(user_id=call.from_user.id, user_name=call.from_user.username,
                           first_name=call.from_user.first_name, second_name=call.from_user.last_name,
                           user_status='manager',
                           test_password=user_id_to_tests_options[call.message.chat.id][0]['test'],
@@ -476,7 +471,7 @@ def choose_type(call):
             if call.from_user.username == value[1]:
                 cnt_of_users_in_table += 1
         if cnt_of_users_in_table == 0:
-            db_table_val3(user_id=call.from_user.id, user_name=call.from_user.username,
+            insert_into_statistics_table(user_id=call.from_user.id, user_name=call.from_user.username,
                           first_name=call.from_user.first_name, second_name=call.from_user.last_name,
                           user_status='manager', test_password=0,
                           correct_answers=0, boss_id=0)
