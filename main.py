@@ -32,9 +32,9 @@ def set_main_menu():
 
 
 # создание строки в базе данных с пользователями
-def insert_into_users_table(user_id: int, user_name: str, user_status: str, username: str):
-    cursor.execute('INSERT INTO users (user_id, user_name, user_status, username) VALUES (?, ?, ?, ?)',
-                   (user_id, user_name, user_status, username))
+def insert_into_users_table(user_id: int, user_name: str, user_status: str, username: str, level: str, b2b_or_b2c: str):
+    cursor.execute('INSERT INTO users (user_id, user_name, user_status, username, level, b2b_or_b2c) VALUES (?, ?, ?, ?, ?, ?)',
+                   (user_id, user_name, user_status, username, level, b2b_or_b2c))
     db_users.commit()
 
 
@@ -79,19 +79,18 @@ def get_text_messages(message):
 
     elif message.text == "/show_statistic":
         user_id = message.from_user.id
-        requests.post('http://127.0.0.1:8080/update', json={"user_id": user_id})
-        for value in cursor.execute('SELECT * FROM users WHERE user_id=?', (message.from_user.id,)):
+        for value in cursor.execute('SELECT * FROM users WHERE user_id=?', (user_id,)):
             if value[2] == 'boss':
                 murkup = types.ReplyKeyboardMarkup(resize_keyboard=True)
                 webAppTest = types.WebAppInfo('https://anyashishkina.github.io/test_repository/')
                 murkup.add(types.InlineKeyboardButton('Заполните форму', web_app=webAppTest))
-                bot.send_message(message.from_user.id, 'Выберите тип клиента', reply_markup=murkup)
+                bot.send_message(user_id, 'Выберите тип клиента', reply_markup=murkup)
             else:
-                requests.post('http://127.0.0.1:8080/update', json={"user_id": message.from_user.id})
+                requests.post('http://127.0.0.1:8080/update', json={"user_id": user_id})
                 hti = Html2Image()
-                hti.screenshot(url=f'http://127.0.0.1:8080/?user_id={message.from_user.id}', save_as='statistic.png')
+                hti.screenshot(url=f'http://127.0.0.1:8080/?user_id={user_id}', save_as='statistic.png')
                 crop_background('statistic.png')
-                bot.send_photo(message.chat.id, photo=open('statistic.png', 'rb'),
+                bot.send_photo(user_id, photo=open('statistic.png', 'rb'),
                                caption='Статистика')  # бот показывает картинку
 
     elif message.text == "/send_statistics_to_mail":
@@ -102,98 +101,98 @@ def get_text_messages(message):
                                 'Создайте пароль для доступа к вашему тесту, он может состоять только цифр')
         bot.register_next_step_handler(send, ask_key_word)
     elif message.text == '/choosetestb2b':
-        if str(user_id_to_tests_options[message.chat.id][0]['test'])[0] == "2":
-            bot.send_message(message.chat.id,
-                             'Вы проходили входной тест для B2C, поэтому можете выбрать тест только из этой категории. Нажмите "Выбрать тест b2c"')
-        else:
-            user_id_to_tests_options[message.chat.id][0]['test'] = 1000
-            user_id_to_tests_options[message.chat.id][0]['test'] += user_id_to_tests_options[message.chat.id][0][
-                'level']
-            user_id_to_tests_options[message.chat.id][0]['question_number'] = 1
-            keyboard = types.InlineKeyboardMarkup()
-            key_loyal = types.InlineKeyboardButton(text='Лояльный', callback_data='loyal_client')
-            key_new = types.InlineKeyboardButton(text='Новый', callback_data='new_client')
-            key_negative = types.InlineKeyboardButton(text='Негативный', callback_data='negative_client')
-            key_doubting = types.InlineKeyboardButton(text='Сомневающийся', callback_data='doubting_client')
-            keyboard.add(key_loyal)
-            keyboard.add(key_new)
-            keyboard.add(key_negative)
-            keyboard.add(key_doubting)
-            bot.send_message(message.from_user.id, 'Выберите тип клиента', reply_markup=keyboard)
+        for value in cursor.execute("SELECT * FROM users WHERE user_id=?", (message.chat.id,)):
+            if value[5] == 'b2c':
+                bot.send_message(message.chat.id, 'Вы проходили входной тест для B2C, поэтому можете выбрать тест только из этой категории. Нажмите "Выбрать тест b2c"')
+            else:
+                user_id_to_tests_options[message.chat.id][0]['test'] = 1000
+                user_id_to_tests_options[message.chat.id][0]['test'] += user_id_to_tests_options[message.chat.id][0][
+                    'level']
+                user_id_to_tests_options[message.chat.id][0]['question_number'] = 1
+                keyboard = types.InlineKeyboardMarkup()
+                key_loyal = types.InlineKeyboardButton(text='Лояльный', callback_data='loyal_client')
+                key_new = types.InlineKeyboardButton(text='Новый', callback_data='new_client')
+                key_negative = types.InlineKeyboardButton(text='Негативный', callback_data='negative_client')
+                key_doubting = types.InlineKeyboardButton(text='Сомневающийся', callback_data='doubting_client')
+                keyboard.add(key_loyal)
+                keyboard.add(key_new)
+                keyboard.add(key_negative)
+                keyboard.add(key_doubting)
+                bot.send_message(message.from_user.id, 'Выберите тип клиента', reply_markup=keyboard)
     elif message.text == '/choosetestb2c':
-        if str(user_id_to_tests_options[message.chat.id][0]['test'])[0] == "1":
-            bot.send_message(message.chat.id,
-                             'Вы проходили входной тест для B2B, поэтому можете выбрать тест только из этой категории. Нажмите "Выбрать тест b2b"')
-        else:
-            user_id_to_tests_options[message.chat.id][0]['test'] = 2000
-            user_id_to_tests_options[message.chat.id][0]['test'] += user_id_to_tests_options[message.chat.id][0][
-                'level']
-            user_id_to_tests_options[message.chat.id][0]['question_number'] = 1
-            keyboard = types.InlineKeyboardMarkup()
-            key_loyal = types.InlineKeyboardButton(text='Лояльный', callback_data='loyal_client')
-            key_new = types.InlineKeyboardButton(text='Новый', callback_data='new_client')
-            key_negative = types.InlineKeyboardButton(text='Негативный', callback_data='negative_client')
-            key_doubting = types.InlineKeyboardButton(text='Сомневающийся', callback_data='doubting_client')
-            keyboard.add(key_loyal)
-            keyboard.add(key_new)
-            keyboard.add(key_negative)
-            keyboard.add(key_doubting)
-            bot.send_message(message.from_user.id, 'Выберите тип клиента', reply_markup=keyboard)
+        for value in cursor.execute("SELECT * FROM users WHERE user_id=?", (message.chat.id,)):
+            if value[5] == "b2b":
+                bot.send_message(message.chat.id, 'Вы проходили входной тест для B2B, поэтому можете выбрать тест только из этой категории. Нажмите "Выбрать тест b2b"')
+            else:
+                user_id_to_tests_options[message.chat.id][0]['test'] = 2000
+                user_id_to_tests_options[message.chat.id][0]['test'] += user_id_to_tests_options[message.chat.id][0][
+                    'level']
+                user_id_to_tests_options[message.chat.id][0]['question_number'] = 1
+                keyboard = types.InlineKeyboardMarkup()
+                key_loyal = types.InlineKeyboardButton(text='Лояльный', callback_data='loyal_client')
+                key_new = types.InlineKeyboardButton(text='Новый', callback_data='new_client')
+                key_negative = types.InlineKeyboardButton(text='Негативный', callback_data='negative_client')
+                key_doubting = types.InlineKeyboardButton(text='Сомневающийся', callback_data='doubting_client')
+                keyboard.add(key_loyal)
+                keyboard.add(key_new)
+                keyboard.add(key_negative)
+                keyboard.add(key_doubting)
+                bot.send_message(message.from_user.id, 'Выберите тип клиента', reply_markup=keyboard)
     elif message.text == "Следующий вопрос":
         user_id = message.from_user.id
-        if user_id_to_tests_options[message.chat.id][0]['b2b_or_b2c'] == 'b2b':
+        if user_id_to_tests_options[user_id][0]['b2b_or_b2c'] == 'b2b':
             for value in cur.execute("SELECT * FROM entrance_test_b2b WHERE id=?",
                                      (user_id_to_tests_options[user_id][0]['test_id'],)):
                 answers = [value[2], value[3], value[4]]
-                user_id_to_tests_options[message.chat.id][0]['correct_option'] = value[5]
-                bot.send_poll(chat_id=message.chat.id, question=value[1], options=answers, type='quiz',
+                user_id_to_tests_options[user_id][0]['correct_option'] = value[5]
+                bot.send_poll(chat_id=user_id, question=value[1], options=answers, type='quiz',
                               correct_option_id=value[5], open_period=30, is_anonymous=False)
-                user_id_to_tests_options[message.chat.id][0]['test_id'] += 1
+                user_id_to_tests_options[user_id][0]['test_id'] += 1
                 # if test_id == 4:
-                if user_id_to_tests_options[message.chat.id][0]['test_id'] == 29:
+                if user_id_to_tests_options[user_id][0]['test_id'] == 29:
                     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
                     button_next_question = types.KeyboardButton('Выбрать тест')
                     markup.row(button_next_question)
-                    bot.send_message(message.from_user.id, 'Нажмите кнопку "Выбрать тест", когда будете готовы.',
+                    bot.send_message(user_id, 'Нажмите кнопку "Выбрать тест", когда будете готовы.',
                                      reply_markup=markup)
 
-        elif user_id_to_tests_options[message.chat.id][0]['b2b_or_b2c'] == 'b2c':
+        elif user_id_to_tests_options[user_id][0]['b2b_or_b2c'] == 'b2c':
             for value in cur.execute("SELECT * FROM entrance_test_b2c WHERE id=?",
-                                     (user_id_to_tests_options[message.chat.id][0]['test_id'],)):
+                                     (user_id_to_tests_options[user_id][0]['test_id'],)):
                 answers = [value[2], value[3], value[4]]
-                user_id_to_tests_options[message.chat.id][0]['correct_option'] = value[5]
-                bot.send_poll(chat_id=message.chat.id, question=value[1], options=answers, type='quiz',
+                user_id_to_tests_options[user_id][0]['correct_option'] = value[5]
+                bot.send_poll(chat_id=user_id, question=value[1], options=answers, type='quiz',
                               correct_option_id=value[5], open_period=30, is_anonymous=False)
-                user_id_to_tests_options[message.chat.id][0]['test_id'] += 1
+                user_id_to_tests_options[user_id][0]['test_id'] += 1
                 # if user_id_to_tests_options[message.chat.id][0]['test_id'] == 4:
-                if user_id_to_tests_options[message.chat.id][0]['test_id'] == 25:
+                if user_id_to_tests_options[user_id][0]['test_id'] == 25:
                     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
                     button_next_question = types.KeyboardButton('Выбрать тест')
                     markup.row(button_next_question)
-                    bot.send_message(message.from_user.id, 'Нажмите кнопку "Выбрать тест", когда будете готовы.',
+                    bot.send_message(user_id, 'Нажмите кнопку "Выбрать тест", когда будете готовы.',
                                      reply_markup=markup)
 
-        elif user_id_to_tests_options[message.chat.id][0]['b2b_or_b2c'] == 'boss_test':
+        elif user_id_to_tests_options[user_id][0]['b2b_or_b2c'] == 'boss_test':
             for value in cursor.execute("SELECT * FROM testbase WHERE question_number=? and test_id=?",
-                                        (user_id_to_tests_options[message.chat.id][0]['question_number'],
-                                         user_id_to_test_boss_key[message.chat.id][0])):
+                                        (user_id_to_tests_options[user_id][0]['question_number'],
+                                         user_id_to_test_boss_key[user_id][0])):
                 answers = [value[2], value[3], value[4], value[5]]
-                user_id_to_tests_options[message.chat.id][0]['correct_option'] = value[6] - 1
+                user_id_to_tests_options[user_id][0]['correct_option'] = value[6] - 1
                 bot.send_poll(chat_id=message.chat.id, question=value[1], options=answers, type='quiz',
                               correct_option_id=value[6] - 1, open_period=30, is_anonymous=False)
-                user_id_to_tests_options[message.chat.id][0]['question_number'] += 1
+                user_id_to_tests_options[user_id][0]['question_number'] += 1
 
         else:
             for value in cur.execute("SELECT * FROM main_tests WHERE test_password=? AND question_number=?",
-                                     (user_id_to_tests_options[message.chat.id][0]['test'],
-                                      user_id_to_tests_options[message.chat.id][0]['question_number'],)):
+                                     (user_id_to_tests_options[user_id][0]['test'],
+                                      user_id_to_tests_options[user_id][0]['question_number'],)):
                 answers = [value[3], value[4], value[5]]
-                user_id_to_tests_options[message.chat.id][0]['correct_option'] = value[6]
-                bot.send_poll(chat_id=message.chat.id, question=value[2], options=answers, type='quiz',
+                user_id_to_tests_options[user_id][0]['correct_option'] = value[6]
+                bot.send_poll(chat_id=user_id, question=value[2], options=answers, type='quiz',
                               correct_option_id=value[6], open_period=30, is_anonymous=False)
-                user_id_to_tests_options[message.chat.id][0]['question_number'] += 1
-            if user_id_to_tests_options[message.chat.id][0]['question_number'] == 4:
-                bot.send_message(message.from_user.id, 'Тест завершён.',
+                user_id_to_tests_options[user_id][0]['question_number'] += 1
+            if user_id_to_tests_options[user_id][0]['question_number'] == 4:
+                bot.send_message(user_id, 'Тест завершён.',
                                  reply_markup=types.ReplyKeyboardRemove())
 
 
@@ -256,18 +255,22 @@ def handle_poll_answer(poll_answer):
             user_id_to_tests_options[poll_answer.user.id][0]['level'] += 300
             bot.send_message(poll_answer.user.id,
                              'На данный момент ваш уровень - эксперт. Вам будут предложены тесты из этой категории')
-
+            cursor.execute('UPDATE users SET level=? WHERE user_id=?', ("Эксперт", poll_answer.user.id,))
+            db_users.commit()
         elif 22 >= user_id_to_tests_options[poll_answer.user.id][0]['result'] >= 20:
             user_id_to_tests_options[poll_answer.user.id][0]['test'] += 200
             user_id_to_tests_options[poll_answer.user.id][0]['level'] += 200
             bot.send_message(poll_answer.user.id,
                              'На данный момент ваш уровень - продвинутый. Вам будут предложены тесты из этой категории')
-
+            cursor.execute('UPDATE users SET level=? WHERE user_id=?', ("Продвинутый", poll_answer.user.id,))
+            db_users.commit()
         elif user_id_to_tests_options[poll_answer.user.id][0]['result'] <= 19:
             user_id_to_tests_options[poll_answer.user.id][0]['test'] += 100
             user_id_to_tests_options[poll_answer.user.id][0]['level'] += 100
             bot.send_message(poll_answer.user.id,
                              'На данный момент ваш уровень - новичок. Вам будут предложены тесты из этой категории')
+            cursor.execute('UPDATE users SET level=? WHERE user_id=?', ("Новичок", poll_answer.user.id,))
+            db_users.commit()
         user_id_to_tests_options[poll_answer.user.id][0]['result'] = 0
 
     # elif test_id == 4 and b2b_or_b2c == 1:
@@ -281,19 +284,22 @@ def handle_poll_answer(poll_answer):
             user_id_to_tests_options[poll_answer.user.id][0]['level'] += 300
             bot.send_message(poll_answer.user.id,
                              'На данный момент ваш уровень - эксперт. Вам будут предложены тесты из этой категории')
-
+            cursor.execute('UPDATE users SET level=? WHERE user_id=?', ("Эксперт", poll_answer.user.id,))
+            db_users.commit()
         elif 23 >= user_id_to_tests_options[poll_answer.user.id][0]['result'] >= 20:
             user_id_to_tests_options[poll_answer.user.id][0]['test'] += 200
             user_id_to_tests_options[poll_answer.user.id][0]['level'] += 200
             bot.send_message(poll_answer.user.id,
                              'На данный момент ваш уровень - продвинутый. Вам будут предложены тесты из этой категории')
-
+            cursor.execute('UPDATE users SET level=? WHERE user_id=?', ("Продвинутый", poll_answer.user.id,))
+            db_users.commit()
         elif user_id_to_tests_options[poll_answer.user.id][0]['result'] <= 19:
             user_id_to_tests_options[poll_answer.user.id][0]['test'] += 100
             user_id_to_tests_options[poll_answer.user.id][0]['level'] += 100
             bot.send_message(poll_answer.user.id,
                              'На данный момент ваш уровень - новичок. Вам будут предложены тесты из этой категории')
-
+            cursor.execute('UPDATE users SET level=? WHERE user_id=?', ("Новичок", poll_answer.user.id,))
+            db_users.commit()
         user_id_to_tests_options[poll_answer.user.id][0]['result'] = 0
     elif user_id_to_tests_options[poll_answer.user.id][0]['question_number'] == 4 and \
             user_id_to_tests_options[poll_answer.user.id][0]['b2b_or_b2c'] == 'choose_test':
@@ -343,7 +349,7 @@ def callback_worker(call):
             else:
                 status = "boss"
             username = call.from_user.username
-            insert_into_users_table(user_id=us_id, user_name=us_name, user_status=status, username=username)
+            insert_into_users_table(user_id=us_id, user_name=us_name, user_status=status, username=username, level='', b2b_or_b2c='')
             if status == 'manager':
                 insert_into_boss_to_users(user_id=us_id, user_status=status, user_boss=0)
                 send = bot.send_message(call.message.chat.id,
@@ -358,6 +364,8 @@ def callback_worker(call):
             bot.send_message(call.message.chat.id, 'Вы можете создать свой тест')
     if call.data == "typeofclientb" or call.data == "typeofclientc":
         if call.data == "typeofclientb":
+            cursor.execute('UPDATE users SET b2b_or_b2c=? WHERE user_id=?', ("b2b", call.message.chat.id,))
+            db_users.commit()
             user_id_to_tests_options[call.message.chat.id][0]['test'] += 1000
             user_id_to_tests_options[call.message.chat.id][0]['b2b_or_b2c'] = 'b2b'
             bot.send_message(call.message.chat.id, 'Отлично! Вы выбрали продажи компании/магазину. Пожалуйста пройдите тест для определения уровня.')
@@ -376,6 +384,8 @@ def callback_worker(call):
                              reply_markup=markup)
 
         else:
+            cursor.execute('UPDATE users SET b2b_or_b2c=? WHERE user_id=?', ("b2c", call.message.chat.id,))
+            db_users.commit()
             user_id_to_tests_options[call.message.chat.id][0]['test'] += 2000
             bot.send_message(call.message.chat.id, 'Отлично! Вы выбрали продажи частному лицу. Пожалуйста пройдите тест для определения уровня.')
             for value in cur.execute("SELECT * FROM entrance_test_b2c"):
@@ -688,22 +698,103 @@ def get_data():
 @app.route('/update', methods=['POST'])
 def update_data():
     user_id = int(request.json['user_id'])
-    test_values = {
-        2111: 0, 2112: 0, 2113: 0,
-        2121: 0, 2122: 0, 2123: 0,
-        2131: 0, 2132: 0, 2133: 0,
-        2141: 0, 2142: 0, 2143: 0
-    }
-    for value in cur.execute("SELECT * FROM statistics WHERE user_id = ?", (user_id,)):
-        if value[5] in test_values:
-            test_values[value[5]] = value[6]
-
-    results[user_id] = {
-        "test1": test_values[2111], "test2": test_values[2121], "test3": test_values[2131],
-        "test4": test_values[2141], "test5": test_values[2112], "test6": test_values[2122],
-        "test7": test_values[2132], "test8": test_values[2142], "test9": test_values[2113],
-        "test10": test_values[2123], "test11": test_values[2133], "test12": test_values[2143],
-    }
+    for value in cursor.execute("SELECT * FROM users WHERE user_id=?", (user_id,)):
+        if value[4] == 'Новичок' and value[5] == 'b2b':
+            test_values_b2b_beginner = {
+                1111: 0, 1112: 0, 1113: 0,
+                1121: 0, 1122: 0, 1123: 0,
+                1131: 0, 1132: 0, 1133: 0,
+                1141: 0, 1142: 0, 1143: 0
+            }
+            for value in cur.execute("SELECT * FROM statistics WHERE user_id = ?", (user_id,)):
+                if value[5] in test_values_b2b_beginner:
+                    test_values_b2b_beginner[value[5]] = value[6]
+            results[user_id] = {
+                "test1": test_values_b2b_beginner[1111], "test2": test_values_b2b_beginner[1121], "test3": test_values_b2b_beginner[1131],
+                "test4": test_values_b2b_beginner[1141], "test5": test_values_b2b_beginner[1112], "test6": test_values_b2b_beginner[1122],
+                "test7": test_values_b2b_beginner[1132], "test8": test_values_b2b_beginner[1142], "test9": test_values_b2b_beginner[1113],
+                "test10": test_values_b2b_beginner[1123], "test11": test_values_b2b_beginner[1133], "test12": test_values_b2b_beginner[1143],
+            }
+        elif value[4] == 'Продвинутый' and value[5] == 'b2b':
+            test_values_b2b_advanced = {
+                1211: 0, 1212: 0, 1213: 0,
+                1221: 0, 1222: 0, 1223: 0,
+                1231: 0, 1232: 0, 1233: 0,
+                1241: 0, 1242: 0, 1243: 0
+            }
+            for value in cur.execute("SELECT * FROM statistics WHERE user_id = ?", (user_id,)):
+                if value[5] in test_values_b2b_advanced:
+                    test_values_b2b_advanced[value[5]] = value[6]
+            results[user_id] = {
+                "test1": test_values_b2b_advanced[1211], "test2": test_values_b2b_advanced[1221], "test3": test_values_b2b_advanced[1231],
+                "test4": test_values_b2b_advanced[1241], "test5": test_values_b2b_advanced[1212], "test6": test_values_b2b_advanced[1222],
+                "test7": test_values_b2b_advanced[1232], "test8": test_values_b2b_advanced[1242], "test9": test_values_b2b_advanced[1213],
+                "test10": test_values_b2b_advanced[1223], "test11": test_values_b2b_advanced[1233], "test12": test_values_b2b_advanced[1243],
+            }
+        elif value[4] == 'Эксперт' and value[5] == 'b2b':
+            test_values_b2b_expert = {
+                1311: 0, 1312: 0, 1313: 0,
+                1321: 0, 1322: 0, 1323: 0,
+                1331: 0, 1332: 0, 1333: 0,
+                1341: 0, 1342: 0, 1343: 0
+            }
+            for value in cur.execute("SELECT * FROM statistics WHERE user_id = ?", (user_id,)):
+                if value[5] in test_values_b2b_expert:
+                    test_values_b2b_expert[value[5]] = value[6]
+            results[user_id] = {
+                "test1": test_values_b2b_expert[1311], "test2": test_values_b2b_expert[1321], "test3": test_values_b2b_expert[1331],
+                "test4": test_values_b2b_expert[1341], "test5": test_values_b2b_expert[1312], "test6": test_values_b2b_expert[1322],
+                "test7": test_values_b2b_expert[1332], "test8": test_values_b2b_expert[1342], "test9": test_values_b2b_expert[1313],
+                "test10": test_values_b2b_expert[1323], "test11": test_values_b2b_expert[1333], "test12": test_values_b2b_expert[1343],
+            }
+        elif value[4] == 'Новичок' and value[5] == 'b2c':
+            test_values_b2c_beginner = {
+                2111: 0, 2112: 0, 2113: 0,
+                2121: 0, 2122: 0, 2123: 0,
+                2131: 0, 2132: 0, 2133: 0,
+                2141: 0, 2142: 0, 2143: 0
+            }
+            for value in cur.execute("SELECT * FROM statistics WHERE user_id = ?", (user_id,)):
+                if value[5] in test_values_b2c_beginner:
+                    test_values_b2c_beginner[value[5]] = value[6]
+            results[user_id] = {
+                "test1": test_values_b2c_beginner[2111], "test2": test_values_b2c_beginner[2121], "test3": test_values_b2c_beginner[2131],
+                "test4": test_values_b2c_beginner[2141], "test5": test_values_b2c_beginner[2112], "test6": test_values_b2c_beginner[2122],
+                "test7": test_values_b2c_beginner[2132], "test8": test_values_b2c_beginner[2142], "test9": test_values_b2c_beginner[2113],
+                "test10": test_values_b2c_beginner[2123], "test11": test_values_b2c_beginner[2133], "test12": test_values_b2c_beginner[2143],
+            }
+        elif value[4] == 'Продвинутый' and value[5] == 'b2c':
+            test_values_b2c_advanced = {
+                2211: 0, 2212: 0, 2213: 0,
+                2221: 0, 2222: 0, 2223: 0,
+                2231: 0, 2232: 0, 2233: 0,
+                2241: 0, 2242: 0, 2243: 0
+            }
+            for value in cur.execute("SELECT * FROM statistics WHERE user_id = ?", (user_id,)):
+                if value[5] in test_values_b2c_advanced:
+                    test_values_b2c_advanced[value[5]] = value[6]
+            results[user_id] = {
+                "test1": test_values_b2c_advanced[2211], "test2": test_values_b2c_advanced[2221], "test3": test_values_b2c_advanced[2231],
+                "test4": test_values_b2c_advanced[2241], "test5": test_values_b2c_advanced[2212], "test6": test_values_b2c_advanced[2222],
+                "test7": test_values_b2c_advanced[2232], "test8": test_values_b2c_advanced[2242], "test9": test_values_b2c_advanced[2213],
+                "test10": test_values_b2c_advanced[2223], "test11": test_values_b2c_advanced[2233], "test12": test_values_b2c_advanced[2243],
+            }
+        elif value[4] == 'Эксперт' and value[5] == 'b2c':
+            test_values_b2c_expert = {
+                2311: 0, 2312: 0, 2313: 0,
+                2321: 0, 2322: 0, 2323: 0,
+                2331: 0, 2332: 0, 2333: 0,
+                2341: 0, 2342: 0, 2343: 0
+            }
+            for value in cur.execute("SELECT * FROM statistics WHERE user_id = ?", (user_id,)):
+                if value[5] in test_values_b2c_expert:
+                    test_values_b2c_expert[value[5]] = value[6]
+            results[user_id] = {
+                "test1": test_values_b2c_expert[2311], "test2": test_values_b2c_expert[2321], "test3": test_values_b2c_expert[2331],
+                "test4": test_values_b2c_expert[2341], "test5": test_values_b2c_expert[2312], "test6": test_values_b2c_expert[2322],
+                "test7": test_values_b2c_expert[2332], "test8": test_values_b2c_expert[2342], "test9": test_values_b2c_expert[2313],
+                "test10": test_values_b2c_expert[2323], "test11": test_values_b2c_expert[2333], "test12": test_values_b2c_expert[2343],
+            }
     return 'Updated'
 
 
