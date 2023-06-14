@@ -90,9 +90,9 @@ def get_text_messages(message):
         for value in cursor.execute('SELECT * FROM users WHERE user_id=?', (user_id,)):
             if value[2] == 'boss':
                 murkup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-                webAppTest = types.WebAppInfo('https://anyashishkina.github.io/test_repository/')
-                murkup.add(types.InlineKeyboardButton('Заполните форму', web_app=webAppTest))
-                bot.send_message(user_id, 'Выберите тип клиента', reply_markup=murkup)
+                webAppTest = types.WebAppInfo('https://katerinavelichko.github.io/project-sales_bot/')
+                murkup.add(types.InlineKeyboardButton('Форма', web_app=webAppTest))
+                bot.send_message(user_id, 'Заполните форму', reply_markup=murkup)
             else:
                 requests.post('http://127.0.0.1:8080/update', json={"user_id": user_id})
                 hti = Html2Image()
