@@ -54,6 +54,14 @@ def insert_into_statistics_table(user_id: int, user_name: str, first_name: str, 
     db_server.commit()
 
 
+passwords_for_tests = [2121, 2122, 2123, 2111, 2112, 2113, 2131, 2132, 2133, 2141, 2142, 2143,
+                       2221, 2222, 2223, 2211, 2212, 2213, 2231, 2232, 2233, 2241, 2242, 2243,
+                       2321, 2322, 2323, 2311, 2312, 2313, 2331, 2332, 2333, 2341, 2342, 2343,
+                       1121, 1122, 1123, 1111, 1112, 1113, 1131, 1132, 1133, 1141, 1142, 1143,
+                       1221, 1222, 1223, 1211, 1212, 1213, 1231, 1232, 1233, 1241, 1242, 1243,
+                       1321, 1322, 1323, 1311, 1312, 1313, 1331, 1332, 1333, 1341, 1342, 1343]
+
+
 from crop import crop_background
 
 user_id_to_tests_options = defaultdict(list)
@@ -164,7 +172,6 @@ def get_text_messages(message):
                 bot.send_poll(chat_id=user_id, question=value[1], options=answers, type='quiz',
                               correct_option_id=value[5], open_period=30, is_anonymous=False)
                 user_id_to_tests_options[user_id][0]['test_id'] += 1
-                # if user_id_to_tests_options[message.chat.id][0]['test_id'] == 4:
                 if user_id_to_tests_options[user_id][0]['test_id'] == 25:
                     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
                     button_next_question = types.KeyboardButton('Выбрать тест')
@@ -244,7 +251,6 @@ def handle_poll_answer(poll_answer):
             db_users.commit()
         user_id_to_tests_options[poll_answer.user.id][0]['result'] = 0
 
-    # if test_id == 4 and b2b_or_b2c == 0:
     if user_id_to_tests_options[poll_answer.user.id][0]['test_id'] == 25 and \
             user_id_to_tests_options[poll_answer.user.id][0]['b2b_or_b2c'] == 'b2c':
         user_id_to_tests_options[poll_answer.user.id][0]['b2b_or_b2c'] = 'choose_test'
@@ -273,7 +279,6 @@ def handle_poll_answer(poll_answer):
             db_users.commit()
         user_id_to_tests_options[poll_answer.user.id][0]['result'] = 0
 
-    # elif test_id == 4 and b2b_or_b2c == 1:
     elif user_id_to_tests_options[poll_answer.user.id][0]['test_id'] == 29 and \
             user_id_to_tests_options[poll_answer.user.id][0]['b2b_or_b2c'] == 'b2b':
         user_id_to_tests_options[poll_answer.user.id][0]['b2b_or_b2c'] = 'choose_test'
@@ -426,8 +431,7 @@ def callback_worker(call):
         elif call.data == 'message_communication':
             user_id_to_tests_options[call.message.chat.id][0]['test'] += 3
         bot.send_message(call.message.chat.id, 'Поздравляю! Вы готовы проходить тест. Он будет сгенерирован нашей системой.')
-    if user_id_to_tests_options[call.message.chat.id][0]['test'] in [2121, 2122, 2123, 2111, 2112, 2113, 2131, 2132,
-                                                                     2133, 2141, 2142, 2143]:
+    if user_id_to_tests_options[call.message.chat.id][0]['test'] in passwords_for_tests:
         cnt_of_passed_test = 0
         for value in cur.execute("SELECT * FROM statistics"):
             if call.from_user.username == value[1] and user_id_to_tests_options[call.message.chat.id][0]['test'] == \
