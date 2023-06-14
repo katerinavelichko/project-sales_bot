@@ -91,8 +91,8 @@ def get_text_messages(message):
             if value[2] == 'boss':
                 murkup = types.ReplyKeyboardMarkup(resize_keyboard=True)
                 webAppTest = types.WebAppInfo('https://anyashishkina.github.io/test_repository/')
-                murkup.add(types.InlineKeyboardButton('Заполните форму', web_app=webAppTest))
-                bot.send_message(user_id, 'Выберите тип клиента', reply_markup=murkup)
+                murkup.add(types.InlineKeyboardButton('Форма', web_app=webAppTest))
+                bot.send_message(user_id, 'Заполните форму', reply_markup=murkup)
             else:
                 requests.post('http://127.0.0.1:8080/update', json={"user_id": user_id})
                 hti = Html2Image()
@@ -345,28 +345,42 @@ def web_app(message: types.Message):
 @bot.callback_query_handler(func=lambda call: True)
 def callback_worker(call):
     if call.data == "manager" or "boss":
-        us_id = call.from_user.id
-        info_user_to = cursor.execute("SELECT * FROM users WHERE user_id = " + str(us_id)).fetchall()
-        if len(info_user_to) == 0:
-            us_name = call.from_user.first_name
-            if call.data == "manager":
-                status = "manager"
+        if call.data == "manager":
+            user_to = call.from_user.id
+            info_user_to = cursor.execute("SELECT * FROM users WHERE user_id = " + str(user_to)).fetchall()
+            if len(info_user_to) == 0:
+                us_id = call.from_user.id
+                us_name = call.from_user.first_name
+                if call.data == "manager":
+                    status = "manager"
+                else:
+                    status = "boss"
+                username = call.from_user.username
+                insert_into_users_table(user_id=us_id, user_name=us_name, user_status=status, username=username)
+                if status == 'manager':
+                    insert_into_boss_to_users(user_id=us_id, user_status=status, user_boss=0)
+                    send = bot.send_message(call.message.chat.id,
+                                            'Введите id вашего руководителя, а в случае его отсутствия введите 0')
+                    bot.register_next_step_handler(send, set_boss)
             else:
-                status = "boss"
-            username = call.from_user.username
-            insert_into_users_table(user_id=us_id, user_name=us_name, user_status=status, username=username, level='', b2b_or_b2c='')
-            if status == 'manager':
-                insert_into_boss_to_users(user_id=us_id, user_status=status, user_boss=0)
-                send = bot.send_message(call.message.chat.id,
-                                        'Введите id вашего руководителя, а в случае его отсутствия введите 0')
-                bot.register_next_step_handler(send, set_boss)
-            else:
-                bot.send_message(call.message.chat.id, 'Вы можете создать свой тест')
-        elif call.data == "manager":
-            send = bot.send_message(call.message.chat.id, 'Вы уже добавлены в базу данных! Вы готовы продолжить?')
-            bot.register_next_step_handler(send, choose_type)
+                send = bot.send_message(call.message.chat.id, 'Вы уже добавлены в базу данных! Вы готовы продолжить?')
+                bot.register_next_step_handler(send, choose_type)
         elif call.data == "boss":
-            bot.send_message(call.message.chat.id, 'Вы можете создать свой тест')
+            user_to = call.from_user.id
+            info_user_to = cursor.execute("SELECT * FROM users WHERE user_id = " + str(user_to)).fetchall()
+            if len(info_user_to) == 0:
+                us_id = call.from_user.id
+                us_name = call.from_user.first_name
+                if call.data == "manager":
+                    status = "manager"
+                else:
+                    status = "boss"
+                username = call.from_user.username
+                insert_into_users_table(user_id=us_id, user_name=us_name, user_status=status, username=username)
+                bot.send_message(call.message.chat.id, 'Вы можете создать свой тест')
+            else:
+                send = bot.send_message(call.message.chat.id, 'Вы уже добавлены в базу данных! Вы готовы продолжить?')
+                bot.register_next_step_handler(send, start_for_boss)
     if call.data == "typeofclientb" or call.data == "typeofclientc":
         if call.data == "typeofclientb":
             cursor.execute('UPDATE users SET b2b_or_b2c=? WHERE user_id=?', ("b2b", call.message.chat.id,))
@@ -475,6 +489,15 @@ def set_boss(message):
     db_users.commit()
     send = bot.send_message(message.chat.id, 'Вы успешно добавлены в базу данных! Вы готовы продолжить?')
     bot.register_next_step_handler(send, choose_type)
+
+
+def start_for_boss(call):
+    cl=call.text
+    if (cl == 'да ' or cl == 'Да ' or cl == 'да' or cl == 'Да'):
+        bot.send_message(call.chat.id, 'Вы можете создать свой тест')
+    else:
+        send = bot.send_message(call.chat.id, 'Напишите: да или нет')
+        bot.register_next_step_handler(send, start_for_boss)
 
 
 def choose_type(call):
