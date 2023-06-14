@@ -90,7 +90,7 @@ def get_text_messages(message):
         for value in cursor.execute('SELECT * FROM users WHERE user_id=?', (user_id,)):
             if value[2] == 'boss':
                 murkup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-                webAppTest = types.WebAppInfo('https://anyashishkina.github.io/test_repository/')
+                webAppTest = types.WebAppInfo('https://katerinavelichko.github.io/project-sales_bot/')
                 murkup.add(types.InlineKeyboardButton('Форма', web_app=webAppTest))
                 bot.send_message(user_id, 'Заполните форму', reply_markup=murkup)
             else:
@@ -356,7 +356,7 @@ def callback_worker(call):
                 else:
                     status = "boss"
                 username = call.from_user.username
-                insert_into_users_table(user_id=us_id, user_name=us_name, user_status=status, username=username)
+                insert_into_users_table(user_id=us_id, user_name=us_name, user_status=status, username=username, level='', b2b_or_b2c='')
                 if status == 'manager':
                     insert_into_boss_to_users(user_id=us_id, user_status=status, user_boss=0)
                     send = bot.send_message(call.message.chat.id,
@@ -376,7 +376,7 @@ def callback_worker(call):
                 else:
                     status = "boss"
                 username = call.from_user.username
-                insert_into_users_table(user_id=us_id, user_name=us_name, user_status=status, username=username)
+                insert_into_users_table(user_id=us_id, user_name=us_name, user_status=status, username=username, level='', b2b_or_b2c='')
                 bot.send_message(call.message.chat.id, 'Вы можете создать свой тест')
             else:
                 send = bot.send_message(call.message.chat.id, 'Вы уже добавлены в базу данных! Вы готовы продолжить?')
